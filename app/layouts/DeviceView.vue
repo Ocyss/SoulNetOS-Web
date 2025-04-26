@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { tv } from 'tailwind-variants'
-import { DrawerContent, DrawerPortal, DrawerRoot } from 'vaul-vue'
 import { appSymbol } from '~/types/keys'
 
 const { gotoBack, gotoHome, gotoTasks } = useAppTask()
@@ -8,13 +7,14 @@ const currentApp = inject(appSymbol, undefined)
 
 const phoneLayoutUI = tv({
   slots: {
-    root: `relative mx-auto h-full w-full flex flex-col justify-around items-center bg-(--ui-bg) max-w-sm overflow-hidden rounded-2xl transition-all duration-300`,
+    root: `relative mx-auto h-full w-full flex flex-col justify-around items-center bg-(--ui-bg) overflow-hidden rounded-2xl transition-all duration-300`,
     statusBar: 'bg-(--ui-bg-elevated)/20 h-8 relative w-full pt-1',
     content: 'flex-1 flex relative overflow-hidden w-full',
     footer: 'h-14 flex items-center justify-center space-x-15 bg-(--ui-bg-elevated)/20 w-full',
   },
 })()
 const phoneLayout = useTemplateRef('phoneLayout')
+const phoneMain = useTemplateRef('phoneMain')
 const [leftOpen, setLeftOpen] = useToggle(false)
 const [rightOpen, setRightOpen] = useToggle(false)
 
@@ -73,6 +73,17 @@ watch(barRightPressed, (value) => {
   }
 })
 
+const phoneRatio = [20, 9] as const
+
+useResizeObserver(phoneLayout, (entries) => {
+  const entry = entries[0]
+  if (!entry || !phoneLayout.value) {
+    return
+  }
+  const { height } = entry.contentRect
+  phoneLayout.value.style.maxWidth = `${height / phoneRatio[0] * phoneRatio[1]}px`
+})
+
 const { date } = useOsDate()
 
 const formattedTime = computed(() => {
@@ -84,12 +95,13 @@ const formattedTime = computed(() => {
 </script>
 
 <template>
-  <div class="h-full w-full p-1 md:p-3 select-none">
+  <div class="h-full w-full p-1 md:p-3">
     <div
+      ref="phoneLayout"
       :class="phoneLayoutUI.root({ class: [currentApp?.ui?.phoneLayout?.root] })"
     >
       <div class="shadow-inner shadow-(color:--ui-bg-inverted) z-100 absolute top-0 left-0 w-full h-full rounded-2xl pointer-events-none" />
-      <div ref="phoneLayout" class="flex flex-col relative w-full h-full rounded-2xl overflow-hidden">
+      <div ref="phoneMain" class="flex flex-col relative w-full h-full rounded-2xl overflow-hidden">
         <header :class="phoneLayoutUI.statusBar({ class: [currentApp?.ui?.phoneLayout?.statusBar] })">
           <slot name="statusBar">
             <div class="flex flex-row items-center justify-between w-full h-full *:h-ful *:w-1/2">
@@ -116,25 +128,13 @@ const formattedTime = computed(() => {
         </footer>
       </div>
     </div>
-    <DrawerRoot
-      v-model:open="leftOpen"
-      direction="top"
-    >
-      <DrawerPortal :to="phoneLayout ?? undefined">
-        <DrawerContent class="size-full absolute top-0 left-0 rounded-2xl overflow-hidden" @click="setLeftOpen(false)">
-          <div class="size-full rounded-2xl bg-(--ui-bg)/30 backdrop-blur-xl" />
-        </DrawerContent>
-      </DrawerPortal>
-    </DrawerRoot>
-    <DrawerRoot
-      v-model:open="rightOpen"
-      direction="top"
-    >
-      <DrawerPortal :to="phoneLayout ?? undefined">
-        <DrawerContent class="size-full absolute top-0 left-0 rounded-2xl overflow-hidden" @click="setRightOpen(false)">
-          <div class="size-full rounded-2xl bg-(--ui-bg)/30 backdrop-blur-xl" />
-        </DrawerContent>
-      </DrawerPortal>
-    </DrawerRoot>
+
+    <div v-if="leftOpen" class="size-full absolute top-0 left-0 rounded-2xl overflow-hidden" @click="setLeftOpen(false)">
+      <div class="size-full rounded-2xl bg-(--ui-bg)/30 backdrop-blur-lg" />
+    </div>
+
+    <div v-if="rightOpen" class="size-full absolute top-0 left-0 rounded-2xl overflow-hidden" @click="setRightOpen(false)">
+      <div class="size-full rounded-2xl bg-(--ui-bg)/30 backdrop-blur-lg" />
+    </div>
   </div>
 </template>

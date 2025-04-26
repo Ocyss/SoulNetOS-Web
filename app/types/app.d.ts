@@ -30,4 +30,5 @@ export interface RegisteredApp {
       footer?: string
     }
   }
+  rmRoute?: () => void
 }

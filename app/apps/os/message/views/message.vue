@@ -37,7 +37,7 @@ onMounted(() => {
         <UButton icon="i-lucide:ellipsis" size="sm" color="neutral" variant="soft" />
       </div>
     </header>
-    <div class="flex-1 space-y-3 pl-4 pr-3 overflow-y-auto scrollbar-thin py-3 w-full select-auto whitespace-pre-wrap break-words overflow-wrap-anywhere">
+    <div class="flex-1 space-y-3 pl-4 pr-3 overflow-y-auto scrollbar-thin py-3 w-full select-text whitespace-pre-wrap break-words overflow-wrap-anywhere">
       <div
         v-for="i in 60" :key="i"
         class="flex flex-col gap-1 min-w-0

@@ -1,11 +1,13 @@
+import type { RoutesNamesList } from '@typed-router/__routes'
 import type { RouteRecordRaw } from 'vue-router'
+import type { RegisteredApp } from '~/types/app'
 import { RouterView } from 'vue-router'
 import apps from '~/apps'
 
 export interface AppTask {
   id: string
   appKey: string
-  routeName?: string
+  routeName?: RoutesNamesList
   rmRoute?: () => void
   active: boolean
   createdAt: Date
@@ -15,9 +17,42 @@ export interface AppTask {
 const tasks = ref<AppTask[]>([])
 window.__tasks__ = tasks
 
-export function useAppTask() {
+// TODO: Config
+const defaultRegister = true
+
+export const appRouteName = (appKey: string) => `appRoute/-${appKey}` as RoutesNamesList
+
+export function createRoute(app: RegisteredApp) {
   const router = useRouter()
 
+  const routeName = appRouteName(app.key)
+
+  let newRoute: RouteRecordRaw | null = null
+
+  if (Array.isArray(app.page)) {
+    app.page[0].name = routeName
+    newRoute = {
+      path: app.key,
+      component: defineComponent({
+        setup() {
+          return () => h(RouterView)
+        },
+      }),
+      children: app.page,
+    }
+  }
+  else {
+    newRoute = {
+      name: routeName,
+      path: app.key,
+      component: app.page,
+    }
+  }
+  return router.addRoute('app', newRoute)
+}
+
+export function useAppTask() {
+  const router = useRouter()
   const getActiveTask = () => {
     return tasks.value.find(t => t.active)
   }
@@ -69,50 +104,25 @@ export function useAppTask() {
     if (activeTask) {
       activeTask.active = false
     }
-    const app = apps[appKey]
+    const app = apps.value.get(appKey)
     if (!app)
       return
 
-    const routeName = `app-${appKey}`
-
-    let newRoute: RouteRecordRaw | null = null
-
-    if (Array.isArray(app.page)) {
-      app.page[0].name = routeName
-      newRoute = {
-        path: appKey,
-        component: defineComponent({
-          setup() {
-            return () => h(RouterView)
-          },
-        }),
-        children: app.page,
-      }
-    }
-    else {
-      newRoute = {
-        name: routeName,
-        path: appKey,
-        component: app.page,
-      }
-    }
-
     const taskId = `${appKey}-${Date.now()}`
-
-    const rmRoute = router.addRoute('app', newRoute)
-
     const newTask: AppTask = {
       id: taskId,
       appKey,
       active: true,
       createdAt: new Date(),
-      routeName,
-      rmRoute,
+      routeName: appRouteName(app.key),
+    }
+    if (!defaultRegister) {
+      newTask.rmRoute = createRoute(app)
     }
 
     tasks.value.push(newTask)
 
-    router.push({ name: routeName as never })
+    router.push({ name: newTask.routeName })
   }
 
   const getAllTasks = () => {

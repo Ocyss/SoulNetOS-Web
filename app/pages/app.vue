@@ -7,7 +7,8 @@ const route = useRoute()
 const { getActiveTask } = useAppTask()
 const appKey = route.name?.slice(4)
 const routePage = useTemplateRef('routePage')
-const app = apps[appKey]
+
+const app = apps.value.get(appKey)
 
 provide(appSymbol, app)
 
@@ -48,7 +49,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <NuxtLayout name="default">
+  <NuxtLayout name="device-view">
     <NuxtPage ref="routePage" class="h-full w-full " :page-key="route => route.fullPath" />
   </NuxtLayout>
 </template>

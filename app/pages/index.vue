@@ -8,7 +8,7 @@ const { launchApp } = useAppTask()
 const desktopGrid = useTemplateRef('desktopGrid')
 const { pressed: isDragging } = useMousePressed({ target: desktopGrid })
 
-const startX = ref(0)
+const startX = ref<number | null>(null)
 const dragOffset = ref(0)
 const dragData = ref<number>()
 
@@ -34,6 +34,8 @@ const desktopGridPages: DesktopAppItem[][] = [
   ],
   [
     { key: 'os.photo/hash', type: 'widget', position: { x: 0, y: 0, width: 2, height: 3 } },
+    { key: 'plugins-demo.example', type: 'app', position: { x: 2, y: 0 } },
+    { key: 'plugins-demo.example22', type: 'app', position: { x: 3, y: 0 } },
   ],
 ]
 
@@ -50,9 +52,9 @@ function desktopGridMouseHandler(event: MouseEvent | TouchEvent) {
     x = event.touches[0]?.clientX ?? 0
   }
   else {
-    x = event.movementX
+    x = event.offsetX
   }
-  if (startX.value === 0) {
+  if (startX.value === null) {
     startX.value = x
   }
   else {
@@ -70,7 +72,7 @@ watch(isDragging, (value) => {
     desktopGridEvent.push(useEventListener(desktopGrid, ['touchstart', 'touchmove'], desktopGridMouseHandler, listenerOptions))
   }
   else {
-    startX.value = 0
+    startX.value = null
     desktopGridEvent.forEach((event) => {
       event()
     })
@@ -134,50 +136,52 @@ useEventListener(container, 'wheel', (e) => {
 </script>
 
 <template>
-  <div ref="container" class="w-full h-full touch-pan-y bg-(--ui-bg) flex flex-col overflow-hidden">
-    <div class="flex-1 overflow-hidden">
-      <div
-        ref="desktopGrid"
-        class="flex h-full w-full touch-pan-x transition-transform duration-300 ease-out"
-        :style="{
-          transform: `translateX(calc(-${currentSlide * 100}% + ${dragOffset}px))`,
-
-        }"
-      >
+  <NuxtLayout name="device-view">
+    <div ref="container" class="w-full h-full touch-pan-y bg-(--ui-bg) flex flex-col overflow-hidden">
+      <div class="flex-1 overflow-hidden">
         <div
-          v-for="(pageItems, pageIndex) in desktopGridPages"
-          :key="pageIndex"
-          class="h-full w-full flex-shrink-0 pb-2 pt-4 px-6 overflow-hidden"
+          ref="desktopGrid"
+          class="flex h-full w-full touch-pan-x transition-transform duration-300 ease-out"
+          :style="{
+            transform: `translateX(calc(-${currentSlide * 100}% + ${dragOffset}px))`,
+
+          }"
         >
-          <div class="grid h-full grid-cols-4 grid-rows-6 gap-3">
-            <DesktopApp
-              v-for="appItem in pageItems"
-              :key="appItem.key"
-              :app-item="appItem"
-              @click="(appKey) => launchApp(appKey)"
-            />
+          <div
+            v-for="(pageItems, pageIndex) in desktopGridPages"
+            :key="pageIndex"
+            class="h-full w-full flex-shrink-0 pb-2 pt-4 px-6 overflow-hidden"
+          >
+            <div class="grid h-full grid-cols-4 grid-rows-6 gap-3">
+              <DesktopApp
+                v-for="appItem in pageItems"
+                :key="appItem.key"
+                :app-item="appItem"
+                @click="(appKey) => launchApp(appKey)"
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="flex justify-center gap-2 py-2">
-      <button
-        v-for="i in desktopGridPages.length"
-        :key="i"
-        class="size-2 rounded-full transition-colors"
-        :class="currentSlide === i - 1 ? 'bg-(--ui-primary)' : 'bg-(--ui-border)'"
-        aria-label="切换到页面"
-        @click="currentSlide = i - 1"
-      />
-    </div>
+      <div class="flex justify-center gap-2 py-2">
+        <button
+          v-for="i in desktopGridPages.length"
+          :key="i"
+          class="size-2 rounded-full transition-colors"
+          :class="currentSlide === i - 1 ? 'bg-(--ui-primary)' : 'bg-(--ui-border)'"
+          aria-label="切换到页面"
+          @click="currentSlide = i - 1"
+        />
+      </div>
 
-    <div class="flex items-center justify-between bg-(--ui-bg-elevated)/30 backdrop-blur-sm border-t border-(--ui-border) px-6 py-3">
-      <DesktopApp
-        v-for="appItem in dockAppItems"
-        :key="appItem.key"
-        :app-item="appItem"
-        @click="(appKey) => launchApp(appKey)"
-      />
+      <div class="flex items-center justify-between bg-(--ui-bg-elevated)/30 backdrop-blur-sm border-t border-(--ui-border) px-6 py-3">
+        <DesktopApp
+          v-for="appItem in dockAppItems"
+          :key="appItem.key"
+          :app-item="appItem"
+          @click="(appKey) => launchApp(appKey)"
+        />
+      </div>
     </div>
-  </div>
+  </NuxtLayout>
 </template>

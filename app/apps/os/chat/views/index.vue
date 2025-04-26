@@ -1,6 +1,9 @@
 <script setup lang="ts">
 const search = ref('')
 const router = useRouter()
+
+// const { data: friends } = await useApi('/v1/apps/os/chat/friends')
+const { data: rooms } = await useApi('/v1/apps/os/chat/rooms')
 </script>
 
 <template>
@@ -28,15 +31,15 @@ const router = useRouter()
     </header>
     <div class="overflow-y-auto py-3 scrollbar-thin">
       <div
-        v-for="i in 30" :key="i" class="flex flex-row items-center justify-between p-2 px-4 text-sm gap-3 hover:bg-(--ui-bg-muted)"
-        @click="router.push({ path: 'chat-page' as never, query: { id: i } })"
+        v-for="room in rooms" :key="room._id" class="flex flex-row items-center justify-between p-2 px-4 text-sm gap-3 hover:bg-(--ui-bg-muted)"
+        @click="router.push({ path: `room/${room._id}` as never })"
       >
-        <UAvatar size="xl" src="https://i.pravatar.cc/300" />
+        <UAvatar size="xl" :src="room.avatar" :alt="room.name" />
         <div class="flex-1 flex flex-row items-center justify-between">
           <div class="flex flex-col gap-1">
-            <div>John Doe</div>
+            <div>{{ room.name }}</div>
             <div class="text-xs text-(--ui-text-muted)">
-              Hello
+              {{ room.last_message }}
             </div>
           </div>
           <div class="flex flex-col gap-1 items-center">

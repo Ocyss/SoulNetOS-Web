@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 const appDetails = computed(() => {
   const baseKey = props.appItem.key.replace(/\/.*$/, '')
-  const registeredApp = appRegistry[baseKey]
+  const registeredApp = appRegistry.value.get(baseKey)
   return registeredApp
 })
 
