@@ -25,3 +25,7 @@ export type LLMProvider = components['schemas']['LLMProvider']
 export type LLMProviderCreate = components['schemas']['LLMProviderCreate']
 export type LLMProviderUpdate = components['schemas']['LLMProviderUpdate']
 export type BaseInfo = components['schemas']['BaseInfo']
+export type EventData = components['schemas']['EventData']
+export type Notify = components['schemas']['Notify'] & {
+  event_id: string
+}

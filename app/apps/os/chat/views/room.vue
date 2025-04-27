@@ -54,7 +54,7 @@ async function sendMessage() {
   deepmerge(message, res, { clone: false })
 }
 
-const upa = useUpa()
+const upa = useUpaNotify()
 
 function scrollToBottom(smooth = true) {
   if (!messagesContainerRef.value)
@@ -93,9 +93,10 @@ onMounted(async () => {
   upa.onEvent({
     eventName: `app.os.chat/chat_message/${room_id}`,
     callback: (event) => {
-      const message = JSON.parse(event.data)
-      messages.value.push(message)
-      console.log(message)
+      if (messages.value.some(m => m._id === event.data._id)) {
+        return
+      }
+      messages.value.push(event.data as ChatMessage)
     },
   })
 

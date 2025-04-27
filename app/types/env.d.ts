@@ -5,8 +5,9 @@ declare global {
   interface Window {
     __tasks__: Ref<AppTask[]>
     appRegistry: Record<string, RegisteredApp>
-    notificationRegistry: Record<string, AppComponent>
+    notifyRegistry: Record<string, AppComponent>
     eventMap: Map<string, Set<EventListenerArgs>>
+    db: Dexie
   }
 }
 

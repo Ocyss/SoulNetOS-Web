@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import type { CSSProperties } from 'vue'
 import type { AppPosition, DesktopAppItem } from '~/types/app'
-import appRegistry from '~/apps'
 
 const props = defineProps<{
   appItem: DesktopAppItem
@@ -11,9 +10,11 @@ const emit = defineEmits<{
   (e: 'click', appKey: string): void
 }>()
 
+const apps = useApps()
+
 const appDetails = computed(() => {
   const baseKey = props.appItem.key.replace(/\/.*$/, '')
-  const registeredApp = appRegistry.value.get(baseKey)
+  const registeredApp = apps.appRegistry.get(baseKey)
   return registeredApp
 })
 

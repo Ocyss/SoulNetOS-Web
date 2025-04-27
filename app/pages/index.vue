@@ -4,7 +4,7 @@ import type { DesktopAppItem } from '~/types/app'
 const currentSlide = ref(0)
 const { ready: currentSlideReady, start: currentSlideStart } = useTimeout(500, { controls: true })
 const container = useTemplateRef('container')
-const { launchApp } = useAppTask()
+const apps = useApps()
 const desktopGrid = useTemplateRef('desktopGrid')
 const { pressed: isDragging } = useMousePressed({ target: desktopGrid })
 
@@ -132,11 +132,12 @@ useEventListener(container, 'wheel', (e) => {
   else if (e.deltaX < -50 || e.deltaY < -50) {
     changeSlide(-1)
   }
-})
+}, { passive: false })
 </script>
 
 <template>
   <NuxtLayout name="device-view">
+    <!-- <DeviceView> -->
     <div ref="container" class="w-full h-full touch-pan-y bg-(--ui-bg) flex flex-col overflow-hidden">
       <div class="flex-1 overflow-hidden">
         <div
@@ -157,7 +158,7 @@ useEventListener(container, 'wheel', (e) => {
                 v-for="appItem in pageItems"
                 :key="appItem.key"
                 :app-item="appItem"
-                @click="(appKey) => launchApp(appKey)"
+                @click="(appKey) => apps.launchApp(appKey)"
               />
             </div>
           </div>
@@ -179,9 +180,10 @@ useEventListener(container, 'wheel', (e) => {
           v-for="appItem in dockAppItems"
           :key="appItem.key"
           :app-item="appItem"
-          @click="(appKey) => launchApp(appKey)"
+          @click="(appKey) => apps.launchApp(appKey)"
         />
       </div>
     </div>
+  <!-- </DeviceView> -->
   </NuxtLayout>
 </template>

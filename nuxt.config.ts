@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  devtools: { enabled: false },
+  devtools: { enabled: true },
   future: {
     // https://github.com/nuxt/nuxt/pull/27029
     compatibilityVersion: 4,
@@ -49,10 +49,6 @@ export default defineNuxtConfig({
   },
   devServer: {
     port: 10400,
-    https: {
-      key: './certs/localhost-key.pem',
-      cert: './certs/localhost.pem',
-    },
   },
   css: ['~/assets/css/main.css'],
   eslint: {

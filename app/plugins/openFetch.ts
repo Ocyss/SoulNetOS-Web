@@ -21,6 +21,8 @@ export default defineNuxtPlugin({
           onRequest(ctx) {
             const header = {
               ...ctx.options.headers || {},
+              // @ts-expect-error https://github.com/enkot/nuxt-open-fetch/issues/79
+              ...ctx.options.header || {},
             }
             const token = useMyStore().token
             if (token) {

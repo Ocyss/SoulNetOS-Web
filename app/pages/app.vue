@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { domToPng } from 'modern-screenshot'
-import apps from '~/apps'
 import { appSymbol } from '~/types/keys'
 
 const route = useRoute()
-const { getActiveTask } = useAppTask()
+const apps = useApps()
 const appKey = route.name?.slice(4)
 const routePage = useTemplateRef('routePage')
 
-const app = apps.value.get(appKey)
+const app = apps.appRegistry.get(appKey)
 
 provide(appSymbol, app)
 
@@ -19,7 +18,7 @@ definePageMeta({
 })
 
 async function saveThumbnail() {
-  const task = getActiveTask()
+  const task = apps.activeTask
   if (task && routePage.value && routePage.value.pageRef) {
     if ('$el' in routePage.value.pageRef) {
       task.thumbnailUrl = await domToPng(routePage.value.pageRef.$el)
@@ -29,6 +28,7 @@ async function saveThumbnail() {
     }
   }
 }
+
 const isSaving = ref(false)
 
 const { resume } = useIntervalFn(async () => {

@@ -1,5 +1,4 @@
 import type { NuxtApp } from '#app'
-import { registerApp, unRegisterApp } from '~/apps'
 
 export class PluginLoader {
   app: NuxtApp
@@ -44,11 +43,12 @@ export class PluginLoader {
   }
 
   createPluginAPI(name: string) {
+    const apps = useApps()
     return {
       name,
       app: this.app,
-      registerApp,
-      unRegisterApp,
+      registerApp: apps.registerApp,
+      unRegisterApp: apps.unRegisterApp,
     }
   }
 
@@ -57,6 +57,7 @@ export class PluginLoader {
     return await response.json()
   }
 }
+
 let pluginLoader: PluginLoader | null = null
 
 export function usePlugin() {

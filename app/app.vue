@@ -8,19 +8,16 @@ await callOnce('infos', () => store.fetchInfos())
 
 const pluginLoader = usePlugin()
 pluginLoader.loadAllPlugins()
-const upa = useUpa()
+const upa = useUpaNotify()
 
-upa.connect()
-onUnmounted(() => {
-  upa.disconnect()
+onMounted(() => {
+  upa.init()
 })
 </script>
 
 <template>
   <UApp class="bg-(--ui-bg)" :toaster="{ position: 'top-right' }">
-    <NuxtLayout>
-      <NuxtPage />
-    </NuxtLayout>
+    <NuxtPage />
   </UApp>
 </template>
 
