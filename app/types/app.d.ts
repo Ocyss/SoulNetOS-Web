@@ -1,4 +1,5 @@
-import type { RouteComponent } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+import type { NotifyData } from './models'
 
 export interface AppPosition {
   x: number
@@ -13,14 +14,21 @@ export interface DesktopAppItem {
   position?: AppPosition
 }
 
-export type AppComponent = RouteComponent
-export type AppWidgetComponent = RouteComponent
+export type AppComponent = Component | RouteRecordRaw[]
 
-export interface RegisteredApp {
-  key: string
+export type AppWidgetComponent = Component
+
+type NotifyHandlerFn = (notify: NotifyData, options?: {
+  package: string
+
+}) => void | boolean | Promise<void | boolean>
+
+interface RegisteredApp {
+  package: string
   name: string
   icon: string
-  page: AppComponent
+  page?: AppComponent
+  actions?: Record<'click', (...args: any[]) => void>
   widget?: AppWidgetComponent
   ui?: {
     phoneLayout: {
@@ -30,5 +38,5 @@ export interface RegisteredApp {
       footer?: string
     }
   }
-  rmRoute?: () => void
+  notifyHandler?: Record<string, NotifyHandlerFn> | NotifyHandlerFn
 }

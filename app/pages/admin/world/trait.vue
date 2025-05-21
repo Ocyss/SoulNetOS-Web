@@ -4,7 +4,7 @@ import type { WorldTrait, WorldTraitCreate, WorldTraitUpdate } from '~/types/mod
 import { UButton } from '#components'
 import * as v from 'valibot'
 
-const { data, refresh } = useApi('/v1/config/world/traits')
+const { data, refresh } = useApi('/v1/admin/config/world/traits')
 const { $api } = useNuxtApp()
 const toast = useToast()
 
@@ -38,7 +38,7 @@ function setTraitModal(status: 'create' | 'update', id?: number) {
 async function createTrait() {
   traitModalLoading.value = true
   try {
-    await $api('/v1/config/world/traits', {
+    await $api('/v1/admin/config/world/traits', {
       method: 'POST',
       body: traitModalData.value as WorldTraitCreate,
       handleOptions: {
@@ -77,7 +77,7 @@ async function updateTrait() {
       return acc
     }, {} as Record<string, any>)
 
-    const res = await $api('/v1/config/world/traits/{trait_id}', {
+    const res = await $api('/v1/admin/config/world/traits/{trait_id}', {
       method: 'PATCH',
       path: {
         trait_id: traitModalID.value,
@@ -113,7 +113,7 @@ async function deleteTrait(id?: number) {
     return
   }
   try {
-    await $api('/v1/config/world/traits/{trait_id}', {
+    await $api('/v1/admin/config/world/traits/{trait_id}', {
       method: 'DELETE',
       path: {
         trait_id: id,

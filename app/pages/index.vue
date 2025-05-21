@@ -133,12 +133,20 @@ useEventListener(container, 'wheel', (e) => {
     changeSlide(-1)
   }
 }, { passive: false })
+
+const soulnet = useSoulnet()
 </script>
 
 <template>
-  <NuxtLayout name="device-view">
-    <!-- <DeviceView> -->
-    <div ref="container" class="w-full h-full touch-pan-y bg-(--ui-bg) flex flex-col overflow-hidden">
+  <NuxtLayout name="device-view" :ui="{ content: 'overflow-visible' }">
+    <div
+      ref="container" class="w-full flex-1 touch-pan-y bg-(--ui-bg) flex flex-col overflow-hidden -mt-8" :style="{
+        backgroundImage: soulnet.getPersonalized.wallpaper ? `url(${soulnet.getPersonalized.wallpaper})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }"
+    >
+      <div class="h-8" />
       <div class="flex-1 overflow-hidden">
         <div
           ref="desktopGrid"
@@ -175,15 +183,15 @@ useEventListener(container, 'wheel', (e) => {
         />
       </div>
 
-      <div class="flex items-center justify-between bg-(--ui-bg-elevated)/30 backdrop-blur-sm border-t border-(--ui-border) px-6 py-3">
+      <div class="flex items-center justify-between bg-(--ui-bg-elevated)/30 backdrop-blur-xs  px-6 py-3">
         <DesktopApp
           v-for="appItem in dockAppItems"
           :key="appItem.key"
           :app-item="appItem"
+          :hide-name="true"
           @click="(appKey) => apps.launchApp(appKey)"
         />
       </div>
     </div>
-  <!-- </DeviceView> -->
   </NuxtLayout>
 </template>

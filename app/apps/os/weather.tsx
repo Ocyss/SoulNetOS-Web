@@ -1,4 +1,7 @@
+const packageName = 'os.weather'
+
 export default defineApp({
+  package: packageName,
   name: '天气',
   icon: 'i-lucide-cloud',
   page: defineComponent({

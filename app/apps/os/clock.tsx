@@ -1,6 +1,9 @@
 import { useOsDate } from '~/composables/useDate'
 
+const packageName = 'os.clock'
+
 export default defineApp({
+  package: packageName,
   name: '时钟',
   icon: 'i-lucide-clock',
   page: defineComponent({

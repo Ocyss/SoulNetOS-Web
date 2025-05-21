@@ -1,25 +1,23 @@
 import type { EntityTable } from 'dexie'
 import type { FetchResponse } from 'ofetch'
-import type { EventData, Notify } from '~/types/models'
+import type { NotifyData, UpaEventData } from '~/types/models'
 import Dexie from 'dexie'
 import { events } from 'fetch-event-stream'
 import { defineStore } from 'pinia'
-import NText from '~/components/notification/NText.vue'
+import deepmerge from '~/utils/deep'
 
 const systemNotify: Record<string, Component> = {
-  TEXT: NText,
+  TEXT: defineAsyncComponent(() => import('~/components/Notify/Text.vue')),
 }
+
+type EventListenerCallBackResult = void | boolean | Partial<NotifyData>
 
 interface EventListenerArgs {
   eventName: string
-  callback: (event: EventData) => void | Promise<void>
+  callback: (event: UpaEventData) => EventListenerCallBackResult | Promise<EventListenerCallBackResult>
   options?: {
     preventNotification?: boolean
   }
-}
-
-type NotifyData = EventData & {
-  isHandled: boolean
 }
 
 const db = new Dexie('NotifyDatabase') as Dexie & {
@@ -32,10 +30,11 @@ const db = new Dexie('NotifyDatabase') as Dexie & {
 db.version(1).stores({
   notifys: '++id, event',
 })
+window.db = db
 
 export const useUpaNotify = defineStore('UpaNotify', {
   state: () => ({
-    notifys: [] as Notify[],
+    notifys: [] as NotifyData[],
     eventMap: new Map<string, Set<EventListenerArgs>>(),
     retried: 0,
     abort: null as AbortController | null,
@@ -48,13 +47,28 @@ export const useUpaNotify = defineStore('UpaNotify', {
         ...state.notifyRegistry,
       } as Record<string, Component>
     },
+    notifysGroup: (state) => {
+      return [...state.notifys].sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0)).reduce((acc, item) => {
+        if (item.is_grouped) {
+          const index = acc.findIndex(i => i[0].event === item.event)
+          if (index !== -1 && acc[index]) {
+            const [oldItem, oldGroup] = acc[index]
+            acc[index] = [item, [...(oldGroup ?? []), oldItem]]
+          }
+          else {
+            acc.push([item, null])
+          }
+        }
+        else {
+          acc.push([item, null])
+        }
+        return acc
+      }, [] as Array<[NotifyData, NotifyData[] | null]>)
+    },
   },
   actions: {
     async init() {
-      this.notifys = (await db.notifys.filter(n => !n.isHandled && !!n.notify).toArray()).map(n => ({
-        ...n.notify,
-        event_id: n.event,
-      }) as Notify)
+      this.notifys = await db.notifys.filter(n => !n.is_handled).toArray()
       await this.connect()
     },
     async connect() {
@@ -67,6 +81,9 @@ export const useUpaNotify = defineStore('UpaNotify', {
         this.retried += 1
         if (t)
           clearTimeout(t)
+        if (e?.response?.status === 401 || e?.response?.status === 418) {
+          return
+        }
         t = setTimeout(this.connect, 1000)
       }
       const lastid = await db.notifys.orderBy('id').last()
@@ -118,39 +135,104 @@ export const useUpaNotify = defineStore('UpaNotify', {
             continue
           }
           try {
-            const data: EventData = JSON.parse(event.data)
-            await db.notifys.add({
-              ...data,
-              isHandled: false,
-            })
+            const data: UpaEventData = JSON.parse(event.data)
+            const { data: _, ...omitdata } = { ...data }
+            const notify = {
+              ...omitdata,
+              is_handled: false,
+            }
             const handlers = this.eventMap.get(event.event) ?? []
             let preventNotification = false
             for (const handler of handlers) {
-              await handler.callback(data)
+              const result = await handler.callback(data)
+              if (result === true) {
+                notify.is_handled = true
+              }
+              else if (typeof result === 'object') {
+                deepmerge(notify, result, { clone: false })
+              }
               if (handler.options?.preventNotification) {
                 preventNotification = true
               }
             }
-            if (!preventNotification && data.notify) {
-              this.notifys.push({
-                ...data.notify,
-                event_id: event.event,
-              })
+            if (!preventNotification) {
+              this.notifys.push(notify)
             }
+            await db.notifys.add(notify)
           }
           catch (e) {
-            console.error('sse parse error', e)
+            console.error('UpaNotify sse handler error: ', e)
           }
         }
       }
     },
+    async handleNotify(notify: NotifyData, group?: NotifyData[]) {
+      const apps = useApps()
+      const app = apps.appRegistry.get(notify.package)
+      if (!app) {
+        throw new Error(`App ${notify.package} not found`)
+      }
+      let result: boolean | void = false
+      if (typeof app.notifyHandler === 'function') {
+        result = await app.notifyHandler(notify)
+      }
+      else {
+        const [_package, event, ..._data] = notify.event.split('/')
+        if (!event) {
+          throw new TypeError(`Notify event ${notify.event} not found`)
+        }
+        const handler = app.notifyHandler?.[event]
+        if (typeof handler === 'function') {
+          result = await handler(notify)
+        }
+        else {
+          throw new TypeError(`Notify handler ${event} not found`)
+        }
+      }
+      if (result !== false) {
+        const nid = [notify.id, ...(group?.map(n => n.id) ?? [])]
 
+        await Promise.all(nid.map(id => db.notifys.update(id, {
+          is_handled: true,
+        })))
+        this.notifys = this.notifys.filter(n => !nid.includes(n.id))
+      }
+    },
+    async ignoreNotify(notify: NotifyData) {
+      await db.notifys.update(notify.id, {
+        is_handled: true,
+      })
+    },
+    async ignoreNotifyAll() {
+      const notifys = await db.notifys.filter(n => !n.is_handled).toArray()
+      await Promise.all(notifys.map(n => db.notifys.update(n.id, {
+        is_handled: true,
+      })))
+      return notifys.length
+    },
+    async ignoreNotifyByCondition(callback: (notify: [NotifyData, NotifyData[] | null]) => boolean) {
+      for (const notify of this.notifysGroup) {
+        if (callback(notify)) {
+          await this.ignoreNotify(notify[0])
+          notify[1]?.forEach(n => this.ignoreNotify(n))
+        }
+      }
+    },
     registerNotification(appKey: string, component: Component) {
       this.notifyRegistry[appKey] = component
     },
-
     unRegisterNotification(appKey: string) {
       delete this.notifyRegistry[appKey]
+    },
+    async resetAll() {
+      // eslint-disable-next-line no-alert
+      const confirm = prompt('确定要清空所有通知吗？请输入"确认清空"来确认')
+      if (!confirm || confirm !== '确认清空')
+        return
+      const { $api } = useNuxtApp()
+      await $api('/v1/reset_all')
+      this.notifys = []
+      db.notifys.clear()
     },
   },
 })

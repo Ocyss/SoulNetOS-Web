@@ -1,5 +1,12 @@
+const packageName = 'os.soulnet'
+
 export default defineApp({
+  package: packageName,
   name: '万象',
   icon: 'i-lucide-sparkles',
-  page: () => import('./views/index.vue'),
+  actions: {
+    click: () => {
+      useSoulnet().setState()
+    },
+  },
 })

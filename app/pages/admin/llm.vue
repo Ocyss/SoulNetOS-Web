@@ -7,9 +7,9 @@ import * as v from 'valibot'
 const { $api } = useNuxtApp()
 const toast = useToast()
 
-const { data: providers } = useApi('/v1/config/llm/providers')
-const { data: models } = useApi('/v1/config/llm/models')
-const { data: supportedApiFormats } = useApi('/v1/config/llm/providers/supported_api_formats')
+const { data: providers } = useApi('/v1/admin/config/llm/providers')
+const { data: models } = useApi('/v1/admin/config/llm/models')
+const { data: supportedApiFormats } = useApi('/v1/admin/config/llm/providers/supported_api_formats')
 
 const providerModal = ref(false)
 const providerModalStatus = ref<'create' | 'update'>('create')
@@ -68,7 +68,7 @@ function setProviderModal(status: 'create' | 'update', id?: number) {
 async function createProvider() {
   providerModalLoading.value = true
   try {
-    const res = await $api('/v1/config/llm/providers', {
+    const res = await $api('/v1/admin/config/llm/providers', {
       method: 'POST',
       body: providerModalData.value as LLMProviderCreate,
     })
@@ -107,7 +107,7 @@ async function updateProvider() {
       return acc
     }, {} as Record<string, any>)
 
-    const res = await $api('/v1/config/llm/providers/{provider_id}', {
+    const res = await $api('/v1/admin/config/llm/providers/{provider_id}', {
       method: 'PATCH',
       path: {
         provider_id: providerModalID.value,
@@ -140,7 +140,7 @@ async function deleteProvider(id?: number) {
   if (!id)
     return
   try {
-    await $api('/v1/config/llm/providers/{provider_id}', {
+    await $api('/v1/admin/config/llm/providers/{provider_id}', {
       method: 'DELETE',
       path: {
         provider_id: id,
@@ -182,7 +182,7 @@ const [modelModalDataSync, setModelModalDataSync] = useToggle(true)
 
 // 模型相关函数
 function setModelModal(status: 'create' | 'update', id?: number) {
-  let model: LLMModel | undefined
+  let model: LLMModel | LLMModelCreate | undefined
   if (status === 'create' && id) {
     model = {
       name: '',
@@ -217,7 +217,7 @@ function setModelModal(status: 'create' | 'update', id?: number) {
 async function createModel() {
   modelModalLoading.value = true
   try {
-    const res = await $api('/v1/config/llm/models', {
+    const res = await $api('/v1/admin/config/llm/models', {
       method: 'POST',
       body: modelModalData.value as LLMModelCreate,
     })
@@ -255,7 +255,7 @@ async function updateModel() {
       return acc
     }, {} as Record<string, any>)
 
-    const res = await $api('/v1/config/llm/models/{model_id}', {
+    const res = await $api('/v1/admin/config/llm/models/{model_id}', {
       method: 'PATCH',
       path: {
         model_id: modelModalID.value,
@@ -288,7 +288,7 @@ async function deleteModel(id?: number) {
   if (!id)
     return
   try {
-    await $api('/v1/config/llm/models/{model_id}', {
+    await $api('/v1/admin/config/llm/models/{model_id}', {
       method: 'DELETE',
       path: {
         model_id: id,
@@ -478,7 +478,7 @@ const tabsItems = [
   },
 ] satisfies TabsItem[]
 
-const { data: defaultModel, refresh: refreshDefaultModel } = useApi('/v1/config/llm/default')
+const { data: defaultModel, refresh: refreshDefaultModel } = useApi('/v1/admin/config/llm/default')
 
 const defaultModelItems = computed(() => {
   return Array.from(new Set(models.value?.map(m => m.name)))
@@ -489,7 +489,7 @@ const defaultModelLoading = ref(false)
 async function updateDefaultModel(v: string) {
   defaultModelLoading.value = true
   try {
-    await $api('/v1/config/llm/default', {
+    await $api('/v1/admin/config/llm/default', {
       method: 'PATCH',
       body: { default_model: v },
     })

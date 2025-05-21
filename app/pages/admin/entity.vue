@@ -3,25 +3,30 @@ import type { TableColumn } from '@nuxt/ui'
 import type { Entity, EntityCreate, EntityPublic, EntityStateModel, EntityStateModelUpdate, EntityUpdate } from '~/types/models'
 import { UButton } from '#components'
 
-const { data, refresh } = useApi('/v1/config/entitys')
+interface EntityModalData {
+  id?: Entity['id']
+  state: 'create' | 'update'
+  data: { entity: EntityCreate | EntityUpdate, state_model: EntityStateModel | EntityStateModelUpdate }
+}
+
+const { data, refresh } = useApi('/v1/admin/config/entitys')
+const jsonSchema: LoadSchemaOptions = {
+  schema: '/schemas/EntityPublic',
+  omit: ['state', 'entity.id', 'entity.created_at', 'entity.updated_at', 'state_model.id'],
+  required: ['state_model'],
+  notAdditionalProperties: true,
+}
 const { $api } = useNuxtApp()
 const toast = useToast()
 
-const entityModal = ref(false)
-const entityModalStatus = ref<'create' | 'update'>('create')
-const entityModalForm = useTemplateRef('entityModalForm')
-const entityModalData = ref<{ entity: EntityCreate | EntityUpdate, state_model: EntityStateModel | EntityStateModelUpdate }>({ entity: {}, state_model: {} })
-const entityModalID = ref<Entity['id']>()
+const entityModal = useTemplateRef('entityModal')
+const entityModalData = ref<EntityModalData>({ state: 'create', data: { entity: {}, state_model: {} } })
 const entityModalLoading = ref(false)
 
-// const schema = v.object({
-//   name: v.pipe(v.string(), v.trim(), v.nonEmpty('名称不能为空'), v.minLength(1, '名称太短')),
-//   description: v.pipe(v.string(), v.trim(), v.nonEmpty('描述不能为空'), v.minLength(1, '描述太短')),
-//   persona: v.pipe(v.string(), v.trim(), v.nonEmpty('人设不能为空'), v.minLength(1, '人设太短')),
-// })
+const aiSystemPrompt = '你是专业的实体编辑器，请根据用户输入的实体信息，生成一个符合要求的实体信息。'
 
 function setEntityModal(status: 'create' | 'update', id?: string) {
-  const entity = id ? data.value?.find(e => e.entity.id === id) : null
+  const entity = id ? data.value?.find(e => e.entity.id === id) : { entity: {}, state_model: {} }
   if (id && !entity) {
     toast.add({
       title: '实体不存在',
@@ -29,17 +34,16 @@ function setEntityModal(status: 'create' | 'update', id?: string) {
       color: 'error',
     })
   }
-  entityModalData.value = jsonClone({
-    entity: entity?.entity || {},
-    state_model: entity?.state_model || {},
-  })
-  entityModalID.value = id
-  entityModal.value = true
-  entityModalStatus.value = status
+
+  entityModalData.value = { id, state: status, data: useOmit(
+    entity,
+    jsonSchema.omit!,
+  ) as EntityModalData['data'] }
+  entityModal.value?.setOpen(true)
 }
 
 async function createEntity() {
-  if (!entityModalData.value.entity || !entityModalData.value.state_model) {
+  if (!entityModalData.value.data.entity || !entityModalData.value.data.state_model) {
     toast.add({
       title: '请填写完整信息',
       description: '请填写完整信息',
@@ -50,22 +54,14 @@ async function createEntity() {
 
   entityModalLoading.value = true
   try {
-    await $api('/v1/config/entitys', {
+    await $api('/v1/admin/config/entitys', {
       method: 'POST',
       body: {
-        entity: entityModalData.value.entity as EntityCreate,
+        entity: entityModalData.value.data.entity as EntityCreate,
         state: {
-          id: null,
-          current_status: entityModalData.value.state_model?.current_status || '',
-          physical_appearance: entityModalData.value.state_model?.physical_appearance || '',
-          current_appearance: entityModalData.value.state_model?.current_appearance || '',
-          carrying_items: entityModalData.value.state_model?.carrying_items || '',
-          owned_items: entityModalData.value.state_model?.owned_items || '',
-          relationships: entityModalData.value.state_model?.relationships || '',
-          persona: entityModalData.value.state_model?.persona || '',
-          recent_events: entityModalData.value.state_model?.recent_events || '',
-          traits: entityModalData.value.state_model?.traits || '',
-        },
+          id: '',
+          ...entityModalData.value.data.state_model,
+        } as EntityStateModel,
       },
     })
     toast.add({
@@ -73,7 +69,7 @@ async function createEntity() {
       description: '实体创建成功',
       color: 'success',
     })
-    entityModal.value = false
+    entityModal.value?.setOpen(false)
     await refresh()
   }
   catch (error) {
@@ -90,29 +86,27 @@ async function createEntity() {
 }
 
 async function updateEntity() {
-  if (!entityModalForm.value || entityModalForm.value.dirtyFields.size === 0 || !entityModalID.value)
+  if (!entityModalData.value.id)
     return
   entityModalLoading.value = true
   try {
-    const body = Array.from(entityModalForm.value.dirtyFields).reduce((acc, key) => {
-      if (entityModalData.value[key]) {
-        acc[key] = entityModalData.value[key]
-      }
-      return acc
-    }, {} as Record<string, any>)
+    // const body = Array.from(entityModalForm.value.dirtyFields).reduce((acc, key) => {
+    //   if (entityModalData.value[key]) {
+    //     acc[key] = entityModalData.value[key]
+    //   }
+    //   return acc
+    // }, {} as Record<string, any>)
+    const entity = data.value?.find(e => e.entity.id === entityModalData.value.id)
 
-    const res = await $api('/v1/config/entitys/{entity_id}', {
+    const res = await $api('/v1/admin/config/entitys/{entity_id}', {
       method: 'PATCH',
       path: {
-        entity_id: entityModalID.value,
+        entity_id: entityModalData.value.id,
       },
-      body: {
-        entity: body.entity,
-        state: body.state,
-      },
+      body: deepValueDiff(entityModalData.value.data, entity),
     })
     if (data.value) {
-      data.value = data.value.map(e => e.entity.id === entityModalID.value ? res : e)
+      data.value = data.value.map(e => e.entity.id === entityModalData.value.id ? res : e)
     }
     toast.add({
       title: '更新实体',
@@ -138,7 +132,7 @@ async function deleteEntity(id?: string) {
     return
   }
   try {
-    await $api('/v1/config/entitys/{entity_id}', {
+    await $api('/v1/admin/config/entitys/{entity_id}', {
       method: 'DELETE',
       path: {
         entity_id: id,
@@ -165,7 +159,7 @@ async function deleteEntity(id?: string) {
 
 async function entityModalHandler() {
   console.log(entityModalData.value)
-  if (entityModalStatus.value === 'create') {
+  if (entityModalData.value.state === 'create') {
     await createEntity()
   }
   else {
@@ -179,12 +173,8 @@ const columns: TableColumn<EntityPublic>[] = [
     header: '名称',
   },
   {
-    accessorKey: 'entity.phone_number',
-    header: '电话',
-  },
-  {
-    accessorKey: 'entity.im_number',
-    header: 'IM 账号',
+    accessorKey: 'entity.description',
+    header: '描述',
   },
   {
     id: 'action',
@@ -208,74 +198,46 @@ const columns: TableColumn<EntityPublic>[] = [
       </UButton>
     </div>
     <UTable :data="data ?? undefined" :columns="columns" class="flex-1 select-text" />
-    <UModal
-      v-model:open="entityModal"
-      :dismissible="false"
-      :title="entityModalStatus === 'create' ? '添加实体' : '编辑实体'"
-      :description="entityModalStatus === 'create' ? '添加实体' : '编辑实体'"
+    <AdminModelEditor
+      ref="entityModal"
+      v-model="entityModalData.data"
+      :title="entityModalData.state === 'create' ? '添加实体' : '编辑实体'"
+      :description="entityModalData.state === 'create' ? '添加实体' : '编辑实体'" :loading="entityModalLoading"
+      :json-schema="jsonSchema" :submit-text="entityModalData.state === 'create' ? '创建' : '保存'"
+      :ai-system-prompt="aiSystemPrompt"
+      @submit="entityModalHandler"
     >
-      <template #content>
-        <UCard>
-          <template #header>
-            <h2 class="text-lg font-bold">
-              {{ entityModalStatus === 'create' ? '添加实体' : '编辑实体' }}
-            </h2>
-          </template>
-          <UForm ref="entityModalForm" :state="entityModalData" class="p-4 gap-4" @submit="entityModalHandler">
-            <UFormField label="名称" name="entity.name">
-              <UInput v-model="entityModalData.entity.name" class="w-full" />
-            </UFormField>
-            <UFormField label="描述" name="entity.description">
-              <UInput v-model="entityModalData.entity.description" class="w-full" />
-            </UFormField>
-            <UFormField label="电话" name="entity.phone_number">
-              <UInput v-model="entityModalData.entity.phone_number" class="w-full" />
-            </UFormField>
-            <UFormField label="IM 账号" name="entity.im_number">
-              <UInput v-model="entityModalData.entity.im_number" class="w-full" />
-            </UFormField>
-            <UFormField label="当前信息" name="state_model.current_status">
-              <UInput v-model="entityModalData.state_model.current_status" class="w-full" />
-            </UFormField>
-            <UFormField label="人物形象" name="state_model.physical_appearance">
-              <UInput v-model="entityModalData.state_model.physical_appearance" class="w-full" />
-            </UFormField>
-            <UFormField label="当前外观" name="state_model.current_appearance">
-              <UInput v-model="entityModalData.state_model.current_appearance" class="w-full" />
-            </UFormField>
-            <UFormField label="携带物品" name="state_model.carrying_items">
-              <UInput v-model="entityModalData.state_model.carrying_items" class="w-full" />
-            </UFormField>
-            <UFormField label="拥有物品" name="state_model.owned_items">
-              <UInput v-model="entityModalData.state_model.owned_items" class="w-full" />
-            </UFormField>
-            <UFormField label="人际关系" name="state_model.relationships">
-              <UInput v-model="entityModalData.state_model.relationships" class="w-full" />
-            </UFormField>
-            <UFormField label="人设" name="state_model.persona">
-              <UInput v-model="entityModalData.state_model.persona" class="w-full" />
-            </UFormField>
-            <UFormField label="重要事件" name="state_model.recent_events">
-              <UInput v-model="entityModalData.state_model.recent_events" class="w-full" />
-            </UFormField>
-            <UFormField label="特质" name="state_model.traits">
-              <UInput v-model="entityModalData.state_model.traits" class="w-full" />
-            </UFormField>
-            <div class="flex justify-end gap-2 my-4">
-              <UButton @click="entityModal = false">
-                取消
-              </UButton>
-              <UButton :loading="entityModalLoading" type="submit">
-                {{ entityModalStatus === 'create' ? '创建' : '保存' }}
-              </UButton>
-            </div>
-          </UForm>
-        </UCard>
+      <template #form>
+        <UFormField label="名称" name="entity.name">
+          <UInput v-model="entityModalData.data.entity.name" class="w-full" />
+        </UFormField>
+        <UFormField label="描述" name="entity.description">
+          <UInput v-model="entityModalData.data.entity.description" class="w-full" />
+        </UFormField>
+        <UFormField label="当前信息" name="state_model.current_status">
+          <UInput v-model="entityModalData.data.state_model.current_status" class="w-full" />
+        </UFormField>
+        <UFormField label="人物形象" name="state_model.physical_appearance">
+          <UInput v-model="entityModalData.data.state_model.physical_appearance" class="w-full" />
+        </UFormField>
+        <UFormField label="当前外观" name="state_model.current_appearance">
+          <UInput v-model="entityModalData.data.state_model.current_appearance" class="w-full" />
+        </UFormField>
+        <UFormField label="人际关系" name="state_model.relationships">
+          <FormJsonInput v-model="entityModalData.data.state_model.relationships" :default-value="{}" class="w-full" />
+        </UFormField>
+        <UFormField label="人设" name="state_model.persona">
+          <UInput v-model="entityModalData.data.state_model.persona" class="w-full" />
+        </UFormField>
+        <UFormField label="重要事件" name="state_model.recent_events">
+          <FormJsonInput v-model="entityModalData.data.state_model.recent_events" :default-value="[]" class="w-full" />
+        </UFormField>
+        <UFormField label="特质" name="state_model.traits">
+          <FormJsonInput v-model="entityModalData.data.state_model.traits" :default-value="{}" class="w-full" />
+        </UFormField>
       </template>
-    </UModal>
+    </AdminModelEditor>
   </div>
 </template>
 
-<style>
-
-</style>
+<style></style>

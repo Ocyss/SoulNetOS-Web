@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   future: {
     // https://github.com/nuxt/nuxt/pull/27029
     compatibilityVersion: 4,
@@ -17,8 +17,9 @@ export default defineNuxtConfig({
     'pinia-plugin-persistedstate', // https://prazdevs.github.io/pinia-plugin-persistedstate/guide/
     '@nuxt/test-utils/module', // https://nuxt.com/docs/getting-started/testing
     'nuxt-typed-router', // https://nuxt-typed-router.vercel.app/usage/how-to-use
-    '@vite-pwa/nuxt',
     'nuxt-open-fetch-x', // https://github.com/Norbiros/nuxt-open-fetch-x
+    'nuxt-lodash', // https://github.com/cipami/nuxt-lodash
+    '@vite-pwa/nuxt',
     '~/modules/apps',
   ],
   app: {

@@ -4,7 +4,7 @@ import type { WorldItem, WorldItemCreate, WorldItemUpdate } from '~/types/models
 import { UButton } from '#components'
 import * as v from 'valibot'
 
-const { data, refresh } = useApi('/v1/config/world/items')
+const { data, refresh } = useApi('/v1/admin/config/world/items')
 const { $api } = useNuxtApp()
 const toast = useToast()
 
@@ -39,7 +39,7 @@ function setItemModal(status: 'create' | 'update', id?: number) {
 async function createItem() {
   itemModalLoading.value = true
   try {
-    await $api('/v1/config/world/items', {
+    await $api('/v1/admin/config/world/items', {
       method: 'POST',
       body: itemModalData.value as WorldItemCreate,
       handleOptions: {
@@ -78,7 +78,7 @@ async function updateItem() {
       return acc
     }, {} as Record<string, any>)
 
-    const res = await $api('/v1/config/world/items/{item_id}', {
+    const res = await $api('/v1/admin/config/world/items/{item_id}', {
       method: 'PATCH',
       path: {
         item_id: itemModalID.value,
@@ -114,7 +114,7 @@ async function deleteItem(id?: number) {
     return
   }
   try {
-    await $api('/v1/config/world/items/{item_id}', {
+    await $api('/v1/admin/config/world/items/{item_id}', {
       method: 'DELETE',
       path: {
         item_id: id,

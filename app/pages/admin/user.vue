@@ -13,15 +13,13 @@ function setUserModal(status: 'create' | 'edit') {
 }
 
 const { $api } = useNuxtApp()
-const { data } = useApi('/v1/config/users')
+const { data } = useApi('/v1/admin/config/users')
 
 const userModalData = ref<UserCreate>({
   name: undefined,
   username: '',
   password: '',
   avatar: undefined,
-  phone_number: undefined,
-  im_number: undefined,
   role: 'user',
 })
 
@@ -30,7 +28,7 @@ const userModalLoading = ref(false)
 async function createUser() {
   userModalLoading.value = true
   try {
-    await $api('/v1/config/users', {
+    await $api('/v1/admin/config/users', {
       method: 'POST',
       body: userModalData.value,
     })
@@ -68,14 +66,6 @@ const columns: TableColumn<User>[] = [
     accessorKey: 'created_at',
     header: '创建时间',
     cell: ({ row }) => dayjs(row.original.created_at).utc().format('YYYY-MM-DD HH:mm:ss'),
-  },
-  {
-    accessorKey: 'phone_number',
-    header: '手机号',
-  },
-  {
-    accessorKey: 'im_number',
-    header: 'IM 账号',
   },
   {
     accessorKey: 'role',
@@ -128,12 +118,6 @@ const columns: TableColumn<User>[] = [
             </UFormField>
             <UFormField label="姓名" name="name">
               <UInput v-model="userModalData.name" :placeholder="userModalData.username" class="w-full" />
-            </UFormField>
-            <UFormField label="手机号" name="phone_number">
-              <UInput v-model="userModalData.phone_number" class="w-full" />
-            </UFormField>
-            <UFormField label="IM 账号" name="im_number">
-              <UInput v-model="userModalData.im_number" class="w-full" />
             </UFormField>
             <UFormField label="头像" name="avatar">
               <UInput type="file" class="w-full" />

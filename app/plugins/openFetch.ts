@@ -24,7 +24,7 @@ export default defineNuxtPlugin({
               // @ts-expect-error https://github.com/enkot/nuxt-open-fetch/issues/79
               ...ctx.options.header || {},
             }
-            const token = useMyStore().token
+            const token = useStore().token
             if (token) {
               header.Authorization = `Bearer ${token}`
             }
@@ -38,12 +38,14 @@ export default defineNuxtPlugin({
               console.log('onResponse Error', { ctx, errMsg })
               const { throwError = true, message = true } = ctx.options.handleOptions ?? {}
               switch (ctx.response.status) {
-                case 401:{
-                  useMyStore().token = ''
+                case 401:
+                case 418: {
+                  useStore().token = ''
                   const route = useRoute()
-                  navigateTo({ path: '/login', query: { redirect: route.fullPath } })
-                  return }
-                case 422:{
+                  navigateTo({ path: ctx.response.status === 401 ? '/login' : '/init', query: { redirect: route.fullPath } })
+                  return
+                }
+                case 422: {
                   const detail = ctx.response._data?.detail
                   if (detail && Array.isArray(detail)) {
                     errMsg = `参数校验错误:${detail.map(item => item.type).join(', ')}`

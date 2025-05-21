@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { usePlugin } from '~/composables/useplugin'
 
-const store = useMyStore()
+const store = useStore()
 await callOnce('user', () => store.fetchUser())
 await callOnce('entitys', () => store.fetchEntitys())
 await callOnce('infos', () => store.fetchInfos())
 
 const pluginLoader = usePlugin()
 pluginLoader.loadAllPlugins()
-const upa = useUpaNotify()
 
-onMounted(() => {
-  upa.init()
-})
+const appConfig = useAppConfig()
+const primaryColor = localStorage.getItem('nuxt-ui-primary')
+if (primaryColor) {
+  appConfig.ui.colors.primary = primaryColor
+}
 </script>
 
 <template>

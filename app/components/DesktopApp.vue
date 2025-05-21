@@ -4,6 +4,7 @@ import type { AppPosition, DesktopAppItem } from '~/types/app'
 
 const props = defineProps<{
   appItem: DesktopAppItem
+  hideName?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -62,10 +63,10 @@ function handleClick() {
       </div>
     </div>
     <div v-else class="flex flex-col items-center justify-center w-full h-full">
-      <div class="flex items-center justify-center size-14 rounded-xl bg-(--ui-bg-elevated) text-(--ui-primary)">
+      <div class="flex items-center justify-center size-18 rounded-xl bg-(--ui-bg-elevated) text-(--ui-primary)">
         <UIcon :name="appDetails.icon ?? 'i-lucide:package-x'" class="size-7" />
       </div>
-      <span class="text-xs text-center mt-1 line-clamp-1 text-(--ui-fg-subtle)">{{ appDetails.name }}</span>
+      <span v-if="!hideName" class="text-sm font-bold text-center mt-1 line-clamp-1 text-(--ui-text)">{{ appDetails.name }}</span>
     </div>
   </div>
 </template>

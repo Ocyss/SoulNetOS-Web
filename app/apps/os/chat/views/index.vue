@@ -4,12 +4,13 @@ const router = useRouter()
 
 // const { data: friends } = await useApi('/v1/apps/os/chat/friends')
 const { data: rooms } = await useApi('/v1/apps/os/chat/rooms')
+const store = useStore()
 </script>
 
 <template>
   <div class="flex flex-col h-full w-full">
     <header class="flex flex-row items-center justify-between gap-2 px-4 pt-3 pb-2">
-      <UAvatar src="https://i.pravatar.cc/300" />
+      <UAvatar :src="store.user?.avatar" />
       <UInput
         v-model="search"
         class="flex-1"
@@ -36,19 +37,25 @@ const { data: rooms } = await useApi('/v1/apps/os/chat/rooms')
       >
         <UAvatar size="xl" :src="room.avatar" :alt="room.name" />
         <div class="flex-1 flex flex-row items-center justify-between">
-          <div class="flex flex-col gap-1">
-            <div>{{ room.name }}</div>
-            <div class="text-xs text-(--ui-text-muted)">
-              {{ room.last_message }}
+          <div class="flex flex-1 flex-col gap-1">
+            <div class="flex flex-row items-center justify-between">
+              <div>
+                {{ room.name }}
+              </div>
+
+              <div v-if="room.last_message_timestamp" class="text-[10px]/3 text-(--ui-text-muted)">
+                {{ dayjs(room.last_message_timestamp).format('YY-MM-DD HH:mm') }}
+              </div>
             </div>
-          </div>
-          <div class="flex flex-col gap-1 items-center">
-            <div class="text-[10px]/3 text-(--ui-text-muted)">
-              12:00
+            <div class=" flex flex-row items-center justify-between">
+              <div class="text-xs text-(--ui-text-muted) line-clamp-1">
+                {{ room.last_message }}
+              </div>
+
+              <UBadge v-if="false" color="neutral" variant="soft" size="xs" class="rounded-full w-fit">
+                99+
+              </UBadge>
             </div>
-            <UBadge color="neutral" variant="soft" size="xs" class="rounded-full w-fit">
-              99+
-            </UBadge>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-const { data } = useApi('/v1/config/world/config')
+const { data } = useApi('/v1/admin/config/world/config')
 </script>
 
 <template>

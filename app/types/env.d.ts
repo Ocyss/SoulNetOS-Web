@@ -8,6 +8,7 @@ declare global {
     notifyRegistry: Record<string, AppComponent>
     eventMap: Map<string, Set<EventListenerArgs>>
     db: Dexie
+    upa: any
   }
 }
 

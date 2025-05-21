@@ -1,7 +1,7 @@
 import type { BaseInfo, EntityPublic, User } from '~/types/models'
 import { defineStore } from 'pinia'
 
-export const useMyStore = defineStore('myStore', {
+export const useStore = defineStore('Store', {
   state: () => ({
     token: '',
     user: null as User | null,

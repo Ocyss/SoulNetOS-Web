@@ -1,5 +1,5 @@
 import type { RegisteredApp } from '~/types/app'
 
-export function defineApp(appDefinition: Omit<RegisteredApp, 'key'>) {
+export function defineApp(appDefinition: RegisteredApp) {
   return appDefinition
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const search = ref('')
 const router = useRouter()
+const store = useStore()
 </script>
 
 <template>
@@ -28,7 +29,7 @@ const router = useRouter()
         v-for="i in 30" :key="i" class="flex flex-row items-center justify-between w-full p-2 px-4 text-sm gap-3 hover:bg-(--ui-bg-muted)"
         @click="router.push({ path: 'message' as never, query: { id: i } })"
       >
-        <UAvatar size="xl" src="https://i.pravatar.cc/300" />
+        <UAvatar size="xl" :src="store.user?.avatar" />
         <div class="flex-1 flex flex-col min-w-0">
           <div class="flex flex-row gap-1 items-center justify-between">
             <div class="text-xs">

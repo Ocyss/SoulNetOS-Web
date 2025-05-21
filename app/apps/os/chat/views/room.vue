@@ -12,7 +12,8 @@ const textareaRef = useTemplateRef('textareaRef')
 const { $api } = useNuxtApp()
 const room = ref<ChatRoom>()
 const messages = ref<Array<ChatMessage>>([])
-const store = useMyStore()
+const messagesSorted = useSorted(messages, (a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
+const store = useStore()
 const messagesContainerRef = ref<HTMLElement | null>(null)
 const messageRefs = ref<HTMLElement[]>([])
 const shouldAutoScroll = ref(true)
@@ -51,7 +52,10 @@ async function sendMessage() {
       room_id: room_id as string,
     },
   })
+
   deepmerge(message, res, { clone: false })
+  message.is_sending = false
+  messages.value = messages.value.map(m => m._id === id ? message : m)
 }
 
 const upa = useUpaNotify()
@@ -91,14 +95,17 @@ watch(() => messages.value.length, () => {
 onMounted(async () => {
   await init()
   upa.onEvent({
-    eventName: `app.os.chat/chat_message/${room_id}`,
+    eventName: `os.chat/chat_message/${room_id}`,
     callback: (event) => {
       if (messages.value.some(m => m._id === event.data._id)) {
         return
       }
       messages.value.push(event.data as ChatMessage)
+      return true
     },
   })
+
+  upa.ignoreNotifyByCondition(notify => notify[0].event === `os.chat/chat_message/${room_id}`)
 
   if (messagesContainerRef.value) {
     messagesContainerRef.value.addEventListener('scroll', onScroll)
@@ -143,7 +150,7 @@ onBeforeUnmount(() => {
       ref="messagesContainerRef"
       class="flex-1 space-y-3 pl-4 pr-3 overflow-y-auto scrollbar-thin py-3 w-full select-text whitespace-pre-wrap break-words overflow-wrap-anywhere overscroll-y-contain"
     >
-      <template v-for="(msg, index) in messages" :key="msg._id">
+      <template v-for="(msg, index) in messagesSorted" :key="msg._id">
         <div
           v-if="msg.sender_id === 'system'"
           :ref="el => { if (el) messageRefs[index] = el as HTMLElement }"
@@ -158,15 +165,19 @@ onBeforeUnmount(() => {
         <div
           v-else
           :ref="el => { if (el) messageRefs[index] = el as HTMLElement }"
-          class="flex flex-row gap-1 min-w-0
+          class="flex flex-row gap-1 min-w-0 relative
           data-[direction=outgoing]:flex-row-reverse group"
           :data-direction="msg.sender_id === store.user?.id ? 'outgoing' : 'incoming'"
         >
           <UAvatar size="sm" :src="store.infos[msg.sender_id]?.avatar ?? room.avatar" :alt="store.infos[msg.sender_id]?.name ?? room.name" />
+
           <div
             class="text-sm bg-(--ui-bg-muted) rounded-xs px-3 py-2 max-w-4/5 min-w-0 relative"
           >
-            <span>  {{ msg.content }}</span>
+            <span>{{ msg.content }}</span>
+            <span class="text-xs text-(--ui-bg-muted) ">HH:mm:ss</span>
+            <span class="text-xs text-(--ui-text-muted) absolute bottom-2 right-3">{{ dayjs(msg.timestamp).format('HH:mm:ss') }}</span>
+            <UIcon v-if="msg.is_sending" name="i-lucide-refresh-cw" class="absolute top-1/2 -right-5 group-data-[direction=outgoing]:-left-5 -translate-y-1/2 animate-spin" />
           </div>
         </div>
       </template>

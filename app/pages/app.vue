@@ -12,7 +12,6 @@ const app = apps.appRegistry.get(appKey)
 provide(appSymbol, app)
 
 definePageMeta({
-  layout: false,
   pageTransition: false,
   layoutTransition: false,
 })
@@ -26,6 +25,7 @@ async function saveThumbnail() {
     else {
       task.thumbnailUrl = await domToPng(routePage.value.pageRef)
     }
+    // console.log('saveThumbnail', task.thumbnailUrl)
   }
 }
 
@@ -43,7 +43,7 @@ const { resume } = useIntervalFn(async () => {
   immediateCallback: true,
 })
 
-onMounted(async () => {
+onMounted(() => {
   resume()
 })
 </script>

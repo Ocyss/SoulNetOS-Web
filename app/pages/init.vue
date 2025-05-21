@@ -1,0 +1,130 @@
+<script lang="ts" setup>
+import * as v from 'valibot'
+
+const router = useRouter()
+const route = useRoute()
+const toast = useToast()
+
+const loading = ref(false)
+const { $api } = useNuxtApp()
+const formState = reactive({
+  name: '',
+  username: '',
+  password: '',
+  password_confirm: '',
+})
+
+const schema = v.pipe(
+  v.object({
+    name: v.pipe(v.string(), v.nonEmpty('昵称不能为空'), v.minLength(1, '昵称太短'), v.maxLength(16, '昵称太长')),
+    username: v.pipe(v.string(), v.nonEmpty('用户名不能为空'), v.minLength(1, '用户名太短'), v.maxLength(16, '用户名太长')),
+    password: v.pipe(v.string(), v.nonEmpty('密码不能为空'), v.minLength(4, '密码太短'), v.maxLength(32, '密码太长')),
+    password_confirm: v.string(),
+  }),
+  v.forward(
+    v.partialCheck(
+      [['password'], ['password_confirm']],
+      input => input.password === input.password_confirm,
+      '两次密码不一致',
+    ),
+    ['password_confirm'],
+  ),
+)
+
+async function handleLogin() {
+  if (!formState.name || !formState.username || !formState.password || !formState.password_confirm) {
+    toast.add({
+      title: '错误',
+      description: '请输入昵称、用户名、密码和重复密码',
+      color: 'error',
+    })
+    return
+  }
+  loading.value = true
+  try {
+    await $api('/v1/init', {
+      method: 'POST',
+      body: {
+        name: formState.name,
+        username: formState.username,
+        password: formState.password,
+        role: 'super_admin',
+      },
+    })
+    await useStore().login(formState.username, formState.password)
+    const redirectPath = route.query.redirect || '/'
+
+    router.push(redirectPath as string)
+
+    toast.add({
+      title: '成功',
+      description: '登录成功，正在跳转...',
+      color: 'success',
+    })
+  }
+  catch (error: unknown) {
+    console.dir(error)
+    if (error instanceof Error) {
+      toast.add({
+        title: '登录失败',
+        description: error.message,
+        color: 'error',
+        icon: 'i-heroicons-exclamation-triangle',
+      })
+    }
+    else {
+      toast.add({
+        title: '登录失败',
+        description: '用户名或密码错误，请重试',
+        color: 'error',
+      })
+    }
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+useSeoMeta({
+  title: '登录 - SoulNetOS',
+})
+</script>
+
+<template>
+  <div class="flex h-dvh w-dvw items-center justify-center bg-(--ui-bg-muted)">
+    <div class="w-full max-w-md rounded-xl bg-(--ui-bg) p-8 shadow-lg">
+      <div class="mb-6 text-center">
+        <h1 class="text-3xl font-bold text-(--ui-text-highlighted)">
+          SoulNetOS 初始化
+        </h1>
+      </div>
+
+      <UForm :state="formState" :schema="schema" class="space-y-4" @submit="handleLogin">
+        <UFormField label="昵称" name="name" required>
+          <UInput v-model="formState.name" placeholder="请输入昵称" class="w-full" />
+        </UFormField>
+        <UFormField label="用户名" name="username" required>
+          <UInput v-model="formState.username" placeholder="请输入用户名" class="w-full" />
+        </UFormField>
+
+        <UFormField label="密码" name="password" required>
+          <UInput v-model="formState.password" type="password" placeholder="请输入密码" class="w-full" />
+        </UFormField>
+
+        <UFormField label="重复密码" name="password_confirm" required>
+          <UInput v-model="formState.password_confirm" type="password" placeholder="请输入密码" class="w-full" />
+        </UFormField>
+
+        <div class="pt-4">
+          <UButton type="submit" color="primary" block :loading="loading">
+            注册
+          </UButton>
+        </div>
+      </UForm>
+    </div>
+  </div>
+</template>
+
+<style>
+
+</style>

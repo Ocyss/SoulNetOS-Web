@@ -1,11 +1,12 @@
-
-
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
 @plugin 'tailwind-scrollbar' {
   nocompatible: true;
 }
+
+@import 'vanilla-jsoneditor/themes/jse-theme-dark.css';
+
 
 @theme {
   --color-uprimary-50: #f4f0ff;
@@ -32,6 +33,8 @@
   --ui-text: var(--ui-color-neutral-700);
   /* Most prominent text */
   --ui-text-highlighted: var(--ui-color-neutral-900);
+  /* Inverted text color */
+  --ui-text-inverted: var(--color-white);
 
   /* Main background color */
   --ui-bg: var(--color-white);
@@ -65,6 +68,8 @@
   --ui-text: var(--ui-color-neutral-200);
   /* Most prominent text */
   --ui-text-highlighted: var(--color-white);
+  /* Inverted text color */
+  --ui-text-inverted: var(--color-neutral-900);
 
   /* Main background color */
   --ui-bg: var(--ui-color-neutral-900);
@@ -85,4 +90,33 @@
   --ui-border-accented: var(--ui-color-neutral-700);
   /* Inverted border color */
   --ui-border-inverted: var(--color-white);
+}
+
+/*
+circle-blur-top-left
+https://github.com/rudrodip/theme-toggle-effect
+thank you @rds_agi
+*/
+
+::view-transition-group(root) {
+  animation-timing-function: var(--expo-out);
+}
+::view-transition-new(root) {
+  mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="0" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>')
+    top left / 0 no-repeat;
+  mask-origin: content-box;
+  animation: scale 1s;
+  transform-origin: top left;
+}
+::view-transition-old(root),
+.dark::view-transition-old(root) {
+  animation: scale 1s;
+  transform-origin: top left;
+  z-index: -1;
+}
+
+@keyframes scale {
+  to {
+    mask-size: 350vmax;
+  }
 }

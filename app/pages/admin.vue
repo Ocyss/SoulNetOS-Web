@@ -58,6 +58,7 @@ const items = ref<NavigationMenuItem[][]>([
 ])
 
 const navigationActive = ref<string>() // TODO
+const upa = useUpaNotify()
 </script>
 
 <template>
@@ -67,6 +68,9 @@ const navigationActive = ref<string>() // TODO
         Admin
       </h1>
       <UNavigationMenu orientation="vertical" :items="items" />
+      <UButton @click="upa.resetAll">
+        重置存储
+      </UButton>
     </div>
     <div class="flex-1 h-full bg-(--ui-bg) px-4">
       <header class="h-12">

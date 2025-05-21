@@ -1,4 +1,7 @@
+const packageName = 'os.message'
+
 export default defineApp({
+  package: packageName,
   name: '短信',
   icon: 'i-lucide-message-square',
   page: [

@@ -29,7 +29,7 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    await useMyStore().login(formState.username, formState.password)
+    await useStore().login(formState.username, formState.password)
     const redirectPath = route.query.redirect || '/'
 
     router.push(redirectPath as string)

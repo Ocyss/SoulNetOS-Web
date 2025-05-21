@@ -4,7 +4,7 @@ import type { WorldEmotion, WorldEmotionCreate, WorldEmotionUpdate } from '~/typ
 import { UButton } from '#components'
 import * as v from 'valibot'
 
-const { data, refresh } = useApi('/v1/config/world/emotions')
+const { data, refresh } = useApi('/v1/admin/config/world/emotions')
 const { $api } = useNuxtApp()
 const toast = useToast()
 
@@ -42,7 +42,7 @@ function setEmotionModal(status: 'create' | 'update', id?: number) {
 async function createEmotion() {
   emotionModalLoading.value = true
   try {
-    await $api('/v1/config/world/emotions', {
+    await $api('/v1/admin/config/world/emotions', {
       method: 'POST',
       body: emotionModalData.value as WorldEmotionCreate,
       handleOptions: {
@@ -82,7 +82,7 @@ async function updateEmotion() {
       return acc
     }, {} as Record<string, any>)
 
-    const res = await $api('/v1/config/world/emotions/{emotion_id}', {
+    const res = await $api('/v1/admin/config/world/emotions/{emotion_id}', {
       method: 'PATCH',
       path: {
         emotion_id: emotionModalID.value,
@@ -118,7 +118,7 @@ async function deleteEmotion(id?: number) {
     return
   }
   try {
-    await $api('/v1/config/world/emotions/{emotion_id}', {
+    await $api('/v1/admin/config/world/emotions/{emotion_id}', {
       method: 'DELETE',
       path: {
         emotion_id: id,

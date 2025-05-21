@@ -31,7 +31,7 @@ Base URLs:
 
 ## GET Get Llm Providers
 
-GET /v1/config/llm/providers
+GET /v1/admin/config/llm/providers
 
 > 返回示例
 
@@ -79,7 +79,7 @@ GET /v1/config/llm/providers
 
 ## POST Create Llm Provider
 
-POST /v1/config/llm/providers
+POST /v1/admin/config/llm/providers
 
 > Body 请求参数
 
@@ -125,7 +125,7 @@ POST /v1/config/llm/providers
 
 ## GET Get Llm Provider
 
-GET /v1/config/llm/providers/{provider_id}
+GET /v1/admin/config/llm/providers/{provider_id}
 
 ### 请求参数
 
@@ -160,7 +160,7 @@ GET /v1/config/llm/providers/{provider_id}
 
 ## PATCH Update Llm Provider
 
-PATCH /v1/config/llm/providers/{provider_id}
+PATCH /v1/admin/config/llm/providers/{provider_id}
 
 > Body 请求参数
 
@@ -207,7 +207,7 @@ PATCH /v1/config/llm/providers/{provider_id}
 
 ## DELETE Delete Llm Provider
 
-DELETE /v1/config/llm/providers/{provider_id}
+DELETE /v1/admin/config/llm/providers/{provider_id}
 
 ### 请求参数
 
@@ -265,7 +265,7 @@ DELETE /v1/config/llm/providers/{provider_id}
 
 ## GET Get Llm Models
 
-GET /v1/config/llm/models
+GET /v1/admin/config/llm/models
 
 > 返回示例
 
@@ -315,7 +315,7 @@ GET /v1/config/llm/models
 
 ## POST Create Llm Model
 
-POST /v1/config/llm/models
+POST /v1/admin/config/llm/models
 
 > Body 请求参数
 
@@ -363,7 +363,7 @@ POST /v1/config/llm/models
 
 ## GET Get Llm Model
 
-GET /v1/config/llm/models/{model_id}
+GET /v1/admin/config/llm/models/{model_id}
 
 ### 请求参数
 
@@ -399,7 +399,7 @@ GET /v1/config/llm/models/{model_id}
 
 ## PATCH Update Llm Model
 
-PATCH /v1/config/llm/models/{model_id}
+PATCH /v1/admin/config/llm/models/{model_id}
 
 > Body 请求参数
 
@@ -448,7 +448,7 @@ PATCH /v1/config/llm/models/{model_id}
 
 ## DELETE Delete Llm Model
 
-DELETE /v1/config/llm/models/{model_id}
+DELETE /v1/admin/config/llm/models/{model_id}
 
 ### 请求参数
 
