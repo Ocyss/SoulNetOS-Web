@@ -9,5 +9,10 @@ export default defineAppConfig({
         base: 'cursor-pointer',
       },
     },
+    table: {
+      slots: {
+        td: 'whitespace-nowrap overflow-hidden text-ellipsis',
+      },
+    },
   },
 })

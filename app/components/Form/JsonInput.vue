@@ -18,9 +18,11 @@ const props = withDefaults(defineProps<{
 
 const modelValue = defineModel<object | null | undefined>({ required: true })
 
-const tempValue = ref<string>(JSON.stringify(modelValue.value))
+const tempValue = ref<string | null>(null)
 
 function saveValue() {
+  if (!tempValue.value)
+    return
   try {
     modelValue.value = JSON.parse(tempValue.value)
   }
@@ -41,6 +43,7 @@ const jsonEditorProps: JSONEditorPropsOptional = {
   mainMenuBar: false,
   statusBar: false,
   mode: Mode.text,
+  readOnly: true, // TODO: 可编辑优化
 }
 
 const colorMode = useColorMode()
@@ -52,7 +55,13 @@ const jsonEditorContainer = useTemplateRef('jsonEditorContainer')
 watchIgnorable(modelValue, (json: any) => {
   if (JSON.stringify(json) === tempValue.value)
     return
-  jsonEditor.value?.set([undefined, ''].includes(json) ? { text: tempValue.value } : { json })
+  if ([undefined, ''].includes(json)) {
+    jsonEditor.value?.set({ text: tempValue.value ?? '' })
+  }
+  else {
+    jsonEditor.value?.set({ json })
+    tempValue.value = null
+  }
 }, {
   deep: true,
 })
@@ -63,6 +72,7 @@ jsonEditorProps.onChange = useDebounceFn((updatedContent: Content) => {
   }
   if ('json' in updatedContent && updatedContent.json != null) {
     modelValue.value = updatedContent.json as object
+    tempValue.value = null
   }
 }, 100)
 

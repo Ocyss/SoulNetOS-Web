@@ -5,8 +5,9 @@ export const useStore = defineStore('Store', {
   state: () => ({
     token: '',
     user: null as User | null,
-    entitys: {} as Record<string, EntityPublic>,
-    infos: {} as Record<string, BaseInfo>,
+    entitys: {} as Record<number, EntityPublic>,
+    infos: {} as Record<number, BaseInfo>,
+    info_names: {} as Record<string, number>,
   }),
   actions: {
     async fetchEntitys() {
@@ -17,17 +18,17 @@ export const useStore = defineStore('Store', {
       this.entitys = res.reduce((acc, entity) => {
         acc[entity.entity.id] = entity
         return acc
-      }, {} as Record<string, EntityPublic>)
+      }, {} as Record<number, EntityPublic>)
     },
     async fetchEntitysState() {
       if (!this.token)
         return
       const { $api } = useNuxtApp()
       const res = await $api('/v1/entitys/state')
-      for (const [key, value] of Object.entries(res)) {
-        if (!this.entitys[key])
-          continue
-        this.entitys[key].state = value
+      for (const state of Object.values(res)) {
+        const entity = this.entitys[state.id]
+        if (entity)
+          entity.state = state
       }
     },
     async fetchInfos() {
@@ -35,7 +36,13 @@ export const useStore = defineStore('Store', {
         return
       const { $api } = useNuxtApp()
       const res = await $api('/v1/infos')
-      this.infos = res
+      const [infos, info_names] = Object.values(res).reduce((acc, info) => {
+        acc[0][info.id] = info
+        acc[1][info.name] = info.id
+        return acc
+      }, [{}, {}] as [Record<number, BaseInfo>, Record<string, number>])
+      this.infos = infos
+      this.info_names = info_names
     },
     async fetchUser() {
       if (!this.token)

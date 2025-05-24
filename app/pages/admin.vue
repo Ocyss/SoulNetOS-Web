@@ -72,7 +72,7 @@ const upa = useUpaNotify()
         重置存储
       </UButton>
     </div>
-    <div class="flex-1 h-full bg-(--ui-bg) px-4">
+    <div class="flex-1 overflow-auto h-full bg-(--ui-bg) px-4">
       <header class="h-12">
         <h1 class="text-2xl font-bold">
           {{ navigationActive }}

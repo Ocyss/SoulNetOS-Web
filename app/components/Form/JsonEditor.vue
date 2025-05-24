@@ -1,6 +1,6 @@
 <!-- https://github.com/josdejong/svelte-jsoneditor -->
 <!-- copy from https://github.com/rotki/rotki -->
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends object">
 import type Ajv from 'ajv'
 import type { Content, JsonEditor, JSONEditorPropsOptional, JSONSchema } from 'vanilla-jsoneditor'
 import { useDebounceFn } from '@vueuse/core'
@@ -9,6 +9,7 @@ import { createJSONEditor, Mode } from 'vanilla-jsoneditor'
 import { createAjvValidatorAsync, loadSchema } from '~/utils/validator'
 
 const props = withDefaults(defineProps<{
+  modelValue: T
   label?: string
   omit?: string[]
   schema?: string | JSONSchema
@@ -18,11 +19,25 @@ const props = withDefaults(defineProps<{
   readonly: false,
 })
 
-const modelValue = defineModel<object>({ required: true })
-const tempValue = ref<string>(JSON.stringify(modelValue.value))
+const emit = defineEmits<{
+  'update:modelValue': [value: T]
+}>()
+
+const modelValue = useVModel(props, 'modelValue', emit, { passive: true, deep: true }) as Ref<T>
+
+const tempValue = ref<string | null>(null)
 
 function saveValue() {
-  modelValue.value = JSON.parse(tempValue.value)
+  if (!tempValue.value)
+    return
+  try {
+    modelValue.value = JSON.parse(tempValue.value)
+    tempValue.value = null
+    return modelValue.value
+  }
+  catch (error) {
+    console.error(error)
+  }
 }
 
 defineExpose({
@@ -44,10 +59,11 @@ const isDark = computed(() => colorMode.value === 'dark')
 const jsonEditor = ref<JsonEditor>()
 const jsonEditorContainer = useTemplateRef('jsonEditorContainer')
 
-watchIgnorable(modelValue, (json: any) => {
+watchIgnorable(modelValue, (json: T) => {
   if (JSON.stringify(json) === tempValue.value)
     return
-  jsonEditor.value?.set([undefined, ''].includes(json) ? { text: tempValue.value } : { json })
+  jsonEditor.value?.set({ json })
+  tempValue.value = null
 }, {
   deep: true,
 })
@@ -61,17 +77,10 @@ watch(() => props.readonly, (readonly: boolean) => {
 jsonEditorProps.onChange = useDebounceFn((updatedContent: Content) => {
   if ('text' in updatedContent && updatedContent.text != null) {
     tempValue.value = updatedContent.text
-    // ignoreUpdates(() => {
-    //   try {
-    //     modelValue.value = JSON.parse(updatedContent.text)
-    //   }
-    //   catch (error) {
-    //     console.warn('JSONEditor json parse error', updatedContent, error)
-    //   }
-    // })
   }
   if ('json' in updatedContent && updatedContent.json != null) {
-    modelValue.value = updatedContent.json as object
+    modelValue.value = updatedContent.json as T
+    tempValue.value = null
   }
 }, 100)
 

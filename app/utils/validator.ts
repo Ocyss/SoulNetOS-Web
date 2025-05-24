@@ -24,11 +24,14 @@ export function createAjvValidator(options: AjvValidatorOptions): Validator {
   return createValidateFunction(validateAjv, options)
 }
 
+type HandlerAdditionalProperties = Record<string, () => Record<string, JSONSchema> | Promise<Record<string, JSONSchema>>>
+
 export interface LoadSchemaOptions {
   schema: string | JSONSchema
   omit?: string[]
   required?: string[]
   notAdditionalProperties?: boolean
+  handlerAdditionalProperties?: HandlerAdditionalProperties
 }
 
 export async function loadSchema(options: LoadSchemaOptions | string) {
@@ -52,6 +55,12 @@ export async function loadSchema(options: LoadSchemaOptions | string) {
   }
   if (options.notAdditionalProperties) {
     const result = removeAdditionalPropertiesObject(schema)
+    if (result && !Array.isArray(result)) {
+      schema = result
+    }
+  }
+  else if (options.handlerAdditionalProperties) {
+    const result = await handlerAdditionalProperties(schema, options.handlerAdditionalProperties)
     if (result && !Array.isArray(result)) {
       schema = result
     }
@@ -215,5 +224,56 @@ function removeAdditionalPropertiesObject(schema: JSONSchema): JSONSchema | JSON
       result[key] = value
     }
   }
+  return result
+}
+
+async function handlerAdditionalProperties(
+  schema: JSONSchema,
+  handlers: HandlerAdditionalProperties,
+  currentPath = '',
+): Promise<JSONSchema | JSONSchema[]> {
+  if (Array.isArray(schema)) {
+    const results = await Promise.all(
+      schema.map(item => handlerAdditionalProperties(item, handlers, currentPath)),
+    )
+    return results.filter(Boolean) as JSONSchema[]
+  }
+
+  if (!schema || typeof schema !== 'object') {
+    return schema
+  }
+
+  const result: JSONSchema = { ...schema }
+
+  if ('additionalProperties' in result) {
+    const handler = handlers[currentPath]
+    if (handler) {
+      const handlerResult = await handler()
+      if (handlerResult) {
+        delete result.additionalProperties
+        result.properties = {
+          ...(result.properties || {}),
+          ...(handlerResult.properties || handlerResult),
+        }
+      }
+    }
+  }
+  if ('properties' in result && result.properties) {
+    const properties = result.properties as Record<string, JSONSchema>
+    const processedProperties: Record<string, JSONSchema> = {}
+
+    for (const key in properties) {
+      const newPath = currentPath ? `${currentPath}.${key}` : key
+      if (properties[key]) {
+        const processed = await handlerAdditionalProperties(properties[key], handlers, newPath)
+        if (processed !== undefined) {
+          processedProperties[key] = processed as JSONSchema
+        }
+      }
+    }
+
+    result.properties = processedProperties
+  }
+
   return result
 }
