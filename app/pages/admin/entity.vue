@@ -149,15 +149,19 @@ async function updateEntity() {
     //   return acc
     // }, {} as Record<string, any>)
 
-    const res = await $api('/v1/admin/config/entitys/{entity_id}', {
+    const res = transform.ltr(await $api('/v1/admin/config/entitys/{entity_id}', {
       method: 'PATCH',
       path: {
         entity_id: entityModalData.value.id,
       },
       body: transform.rtl(entityModalData.value.data),
-    })
+    }))
     if (data.value) {
-      data.value = data.value.map(e => e.entity.id === entityModalData.value.id ? transform.ltr(res) : e)
+      data.value = data.value.map(e => e.entity.id === entityModalData.value.id ? res : e)
+      entityModalData.value.data = useOmit(
+        res,
+        jsonSchema.omit!,
+      ) as EntityModalData['data']
     }
     toast.add({
       title: '更新实体',

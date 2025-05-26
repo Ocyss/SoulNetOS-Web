@@ -40,12 +40,12 @@ const aiPrompt = ref('')
 const aiLoading = ref(false)
 
 const aiPromptResponseTypeItems = ['json-schema', 'json-object', 'text']
-const aiPromptResponseType = ref('text')
 
 const aiModelLoading = ref(false)
 const { data: aiModels } = useApi('/v1/admin/config/llm/models')
 const aiModelValue = useLocalStorage(`AdminModelEditor/aiModelValue:${location.pathname}`, {
   model: '',
+  response_format: 'text',
   max_tokens: 2048,
   temperature: 0.3,
   top_p: 0.5,
@@ -70,10 +70,10 @@ async function aiPromptHandler() {
     let response_format: Record<string, any> | undefined
     let content = `${aiPrompt.value}\n\n## 当前json:\n${JSON.stringify(modelValue.value, null, 2)}`
     if (jsonSchema.value) {
-      if (aiPromptResponseType.value !== 'json-schema') {
+      if (aiModelValue.value.response_format !== 'json-schema') {
         content += `\n\n## 总是使用Json输出，格式如下:\n${JSON.stringify(jsonSchema.value, null, 2)}`
       }
-      if (aiPromptResponseType.value === 'json-schema') {
+      if (aiModelValue.value.response_format === 'json-schema') {
         response_format = {
           type: 'json_schema',
           json_schema: {
@@ -82,7 +82,7 @@ async function aiPromptHandler() {
           },
         }
       }
-      else if (aiPromptResponseType.value === 'json-object') {
+      else if (aiModelValue.value.response_format === 'json-object') {
         response_format = {
           type: 'json_object',
         }
@@ -175,7 +175,6 @@ onMounted(() => {
         jsonSchema.value = schema
       })
     }
-    aiPromptResponseType.value = 'json-schema'
   }
 })
 </script>
@@ -223,7 +222,7 @@ onMounted(() => {
                         :items="aiModelItems" class="w-48"
                       />
                       <USelect
-                        v-model="aiPromptResponseType"
+                        v-model="aiModelValue.response_format"
                         placeholder="选择类型"
                         :items="aiPromptResponseTypeItems" class="w-48"
                       />

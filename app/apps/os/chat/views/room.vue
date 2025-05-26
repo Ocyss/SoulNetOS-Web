@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { ChatMessage as _ChatMessage, ChatRoom } from '../types'
+import deepmerge from '~/utils/deep'
+import { revents } from '~/utils/sse'
 
 type ChatMessage = _ChatMessage & {
   is_sending?: boolean
@@ -38,7 +40,7 @@ async function sendMessage() {
   const message: ChatMessage = {
     _id: id,
     room_id: room_id as string,
-    sender_id: store.user?.id ?? '',
+    sender_id: store.user?.id ?? -1,
     content,
     timestamp: Date.now(),
     is_sending: true,
@@ -51,11 +53,20 @@ async function sendMessage() {
       message: content,
       room_id: room_id as string,
     },
+    responseType: 'stream',
   })
 
-  deepmerge(message, res, { clone: false })
-  message.is_sending = false
-  messages.value = messages.value.map(m => m._id === id ? message : m)
+  for await (const event of revents(res)) {
+    if (event.data && event.event === 'updates') {
+      const data = JSON.parse(event.data)
+      if ('save_message' in data) {
+        deepmerge(message, data.save_message.message, { clone: false })
+        message.is_sending = false
+        messages.value = messages.value.map(m => m._id === id ? message : m)
+        break
+      }
+    }
+  }
 }
 
 const upa = useUpaNotify()
@@ -152,7 +163,7 @@ onBeforeUnmount(() => {
     >
       <template v-for="(msg, index) in messagesSorted" :key="msg._id">
         <div
-          v-if="msg.sender_id === 'system'"
+          v-if="msg.sender_id === -1"
           :ref="el => { if (el) messageRefs[index] = el as HTMLElement }"
         >
           <div
@@ -175,7 +186,7 @@ onBeforeUnmount(() => {
             class="text-sm bg-(--ui-bg-muted) rounded-xs px-3 py-2 max-w-4/5 min-w-0 relative"
           >
             <span>{{ msg.content }}</span>
-            <span class="text-xs text-(--ui-bg-muted) ">HH:mm:ss</span>
+            <span class="text-xs text-(--ui-bg-muted) select-none">HH:mm:ss</span>
             <span class="text-xs text-(--ui-text-muted) absolute bottom-2 right-3">{{ dayjs(msg.timestamp).format('HH:mm:ss') }}</span>
             <UIcon v-if="msg.is_sending" name="i-lucide-refresh-cw" class="absolute top-1/2 -right-5 group-data-[direction=outgoing]:-left-5 -translate-y-1/2 animate-spin" />
           </div>

@@ -59,5 +59,8 @@
     "typescript": "^5.8.3",
     "vite-plugin-eslint2": "^5.0.3",
     "vitest": "^3.1.2"
+  },
+  "overrides": {
+    "fetch-event-stream": "npm:@ocyss/fetch-event-stream@0.1.5"
   }
 }

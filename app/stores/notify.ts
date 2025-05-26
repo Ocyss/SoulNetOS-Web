@@ -233,6 +233,8 @@ export const useUpaNotify = defineStore('UpaNotify', {
       await $api('/v1/reset_all')
       this.notifys = []
       db.notifys.clear()
+      // eslint-disable-next-line no-alert
+      alert('已清空所有通知，请刷新页面')
     },
   },
 })
