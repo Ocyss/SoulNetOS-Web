@@ -1,22 +1,22 @@
 <script lang="tsx" setup>
 import type { TableColumn } from '@nuxt/ui'
-import type { Entity, EntityAdminPublic, EntityCreate, EntityDefaultState, EntityDefaultStateUpdate, EntityPublic, EntityUpdate, JSONSchema } from '~/types/models'
+import type { Entity, EntityAdminPublic, EntityCreate, EntityPublic, EntityStateInit, EntityUpdate, JSONSchema } from '~/types/models'
 import { UButton } from '#components'
 
 interface EntityModalData {
   id?: Entity['id']
   loading: boolean
   state: 'create' | 'update'
-  data: { entity: EntityCreate | EntityUpdate, default_state: EntityDefaultState | EntityDefaultStateUpdate }
+  data: { entity: EntityCreate | EntityUpdate, state_init: EntityStateInit }
 }
 const store = useStore()
 
 const transform = {
   ltr: (data: EntityAdminPublic) => {
-    if (!data.default_state.relationships) {
+    if (!data.state_init.relations) {
       return data
     }
-    data.default_state.relationships = Object.entries(data.default_state.relationships).reduce((acc, relationship) => {
+    data.state_init.relations = Object.entries(data.state_init.relations).reduce((acc, relationship) => {
       const info = store.infos[Number(relationship[0])]
       if (info)
         acc[info.name] = relationship[1]
@@ -25,16 +25,15 @@ const transform = {
     return data
   },
   rtl: (data: EntityModalData['data']) => {
-    if (!data.default_state || !data.default_state.relationships) {
+    if (!data.state_init || !data.state_init.relations) {
       return data
     }
-    data.default_state.relationships = Object.entries(data.default_state.relationships).reduce((acc, relationship) => {
+    data.state_init.relations = Object.entries(data.state_init.relations).reduce((acc, relationship) => {
       const id = store.info_names[relationship[0]]
       if (id != null)
         acc[String(id)] = relationship[1]
       return acc
     }, {} as Record<string, string>)
-
     return data
   },
 }
@@ -45,7 +44,7 @@ const { data, refresh } = useApi('/v1/admin/config/entitys', {
   },
 })
 
-const omit = ['state', 'entity.id', 'entity.created_at', 'entity.updated_at', 'default_state.id']
+const omit = ['state', 'entity.id', 'entity.created_at', 'entity.updated_at', 'state_init.id']
 
 const { $api } = useNuxtApp()
 const toast = useToast()
@@ -53,24 +52,13 @@ const toast = useToast()
 const jsonSchema: LoadSchemaOptions = {
   schema: '/schemas/EntityAdminPublic',
   omit: [...omit, 'entity.avatar'],
-  required: ['default_state', 'default_state.current_appearance', 'default_state.persona', 'default_state.traits', 'default_state.current_status', 'default_state.physical_appearance', 'default_state.relationships', 'default_state.recent_events'],
+  required: ['state_init'],
   // notAdditionalProperties: true,
   handlerAdditionalProperties: {
-    'default_state.relationships': () => {
+    'state_init.relations': () => {
       return Object.values(store.infos).reduce((acc, info) => {
         acc[info.name] = {
           type: 'string',
-          default: null,
-        }
-        return acc
-      }, {} as Record<string, JSONSchema>)
-    },
-    'default_state.traits': async () => {
-      const res = await $api('/v1/admin/config/world/traits')
-      return res.reduce((acc, trait) => {
-        acc[trait.name] = {
-          type: 'string',
-          default: null,
         }
         return acc
       }, {} as Record<string, JSONSchema>)
@@ -79,12 +67,15 @@ const jsonSchema: LoadSchemaOptions = {
 }
 
 const entityModal = useTemplateRef('entityModal')
-const entityModalData = ref<EntityModalData>({ loading: false, state: 'create', data: { entity: {}, default_state: {} } })
+const entityModalData = ref<EntityModalData>({ loading: false, state: 'create', data: { entity: {}, state_init: {
+  emotions: [],
+  relations: {},
+} } })
 
 const aiSystemPrompt = '你是专业的实体编辑器，请根据用户输入的实体信息，生成一个符合要求的实体信息。'
 
 function setEntityModal(status: 'create' | 'update', id?: number) {
-  const entity = id ? data.value?.find(e => e.entity.id === id) : { entity: {}, default_state: {} }
+  const entity = id ? data.value?.find(e => e.entity.id === id) : { entity: {}, state_init: {} }
   if (id && !entity) {
     toast.add({
       title: '实体不存在',
@@ -101,7 +92,7 @@ function setEntityModal(status: 'create' | 'update', id?: number) {
 }
 
 async function createEntity() {
-  if (!entityModalData.value.data.entity || !entityModalData.value.data.default_state) {
+  if (!entityModalData.value.data.entity || !entityModalData.value.data.state_init) {
     toast.add({
       title: '请填写完整信息',
       description: '请填写完整信息',
@@ -270,26 +261,8 @@ const columns: TableColumn<EntityPublic>[] = [
         <UFormField label="描述" name="entity.description">
           <UInput v-model="entityModalData.data.entity.description" class="w-full" />
         </UFormField>
-        <UFormField label="当前信息" name="default_state.current_status">
-          <UInput v-model="entityModalData.data.default_state.current_status" class="w-full" />
-        </UFormField>
-        <UFormField label="人物形象" name="default_state.physical_appearance">
-          <UInput v-model="entityModalData.data.default_state.physical_appearance" class="w-full" />
-        </UFormField>
-        <UFormField label="当前外观" name="default_state.current_appearance">
-          <UInput v-model="entityModalData.data.default_state.current_appearance" class="w-full" />
-        </UFormField>
-        <UFormField label="人际关系" name="default_state.relationships">
-          <FormJsonInput v-model="entityModalData.data.default_state.relationships" :default-value="{}" class="w-full" />
-        </UFormField>
-        <UFormField label="人设" name="default_state.persona">
-          <UInput v-model="entityModalData.data.default_state.persona" class="w-full" />
-        </UFormField>
-        <UFormField label="重要事件" name="default_state.recent_events">
-          <FormJsonInput v-model="entityModalData.data.default_state.recent_events" :default-value="[]" class="w-full" />
-        </UFormField>
-        <UFormField label="特质" name="default_state.traits">
-          <FormJsonInput v-model="entityModalData.data.default_state.traits" :default-value="{}" class="w-full" />
+        <UFormField label="人设" name="entity.prompt">
+          <UTextarea v-model="entityModalData.data.entity.prompt" class="w-full" :rows="10" autoresize />
         </UFormField>
       </template>
     </AdminModelEditor>

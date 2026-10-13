@@ -24,19 +24,9 @@ const items = ref<NavigationMenuItem[][]>([
           to: '/admin/world/world',
         },
         {
-          label: '物品',
-          icon: 'i-lucide-package',
-          to: '/admin/world/item',
-        },
-        {
           label: '情绪',
           icon: 'i-lucide-heart',
           to: '/admin/world/emotion',
-        },
-        {
-          label: '特质',
-          icon: 'i-lucide-star',
-          to: '/admin/world/trait',
         },
       ],
     },

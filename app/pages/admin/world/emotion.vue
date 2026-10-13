@@ -11,9 +11,7 @@ const toast = useToast()
 const emotionModal = ref(false)
 const emotionModalStatus = ref<'create' | 'update'>('create')
 const emotionModalForm = useTemplateRef('emotionModalForm')
-const emotionModalData = ref<(WorldEmotionCreate | WorldEmotionUpdate) & { value_range: [number, number] }>({
-  value_range: [0, 100],
-})
+const emotionModalData = ref<WorldEmotionCreate | WorldEmotionUpdate>({})
 const emotionModalID = ref<WorldEmotion['id']>()
 const emotionModalLoading = ref(false)
 
@@ -31,9 +29,7 @@ function setEmotionModal(status: 'create' | 'update', id?: number) {
       color: 'error',
     })
   }
-  emotionModalData.value = jsonClone(emotion || {
-    value_range: [0, 100],
-  })
+  emotionModalData.value = jsonClone(emotion ?? {})
   emotionModalID.value = id
   emotionModal.value = true
   emotionModalStatus.value = status
@@ -167,24 +163,6 @@ const columns: TableColumn<WorldEmotion>[] = [
     },
   },
   {
-    accessorKey: 'value_range',
-    header: '值范围',
-    cell: ({ row }) => {
-      return row.original.value_range?.join(' - ') || ''
-    },
-  },
-  {
-    accessorKey: 'is_entity_bound',
-    header: '绑定实体',
-    cell: ({ row }) => {
-      return row.original.is_entity_bound ? '是' : '否'
-    },
-  },
-  {
-    accessorKey: 'default_value',
-    header: '默认值',
-  },
-  {
     id: 'action',
     cell: ({ row }) => {
       return (
@@ -232,18 +210,6 @@ const columns: TableColumn<WorldEmotion>[] = [
                 :maxrows="5"
                 autoresize
               />
-            </UFormField>
-            <UFormField label="值范围" name="value_range" help="请以逗号分隔输入两个数值，例如: 0,100">
-              <div class="flex gap-2">
-                <UInput v-model.number="emotionModalData.value_range[0]" type="number" class="w-full" placeholder="最小值" />
-                <UInput v-model.number="emotionModalData.value_range[1]" type="number" class="w-full" placeholder="最大值" />
-              </div>
-            </UFormField>
-            <UFormField label="是否绑定实体" name="is_entity_bound">
-              <USwitch v-model="emotionModalData.is_entity_bound!" />
-            </UFormField>
-            <UFormField label="默认值" name="default_value">
-              <UInput v-model.number="emotionModalData.default_value" type="number" class="w-full" />
             </UFormField>
             <div class="flex justify-end gap-2 my-4">
               <UButton @click="emotionModal = false">

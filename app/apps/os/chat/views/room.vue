@@ -34,11 +34,9 @@ async function init() {
 }
 
 async function sendMessage() {
-  const id = ''
   const content = inputMessage.value
   inputMessage.value = ''
   const message: ChatMessage = {
-    _id: id,
     room_id: room_id as string,
     sender_id: store.user?.id ?? -1,
     content,
@@ -62,7 +60,6 @@ async function sendMessage() {
       if ('save_message' in data) {
         deepmerge(message, data.save_message.message, { clone: false })
         message.is_sending = false
-        messages.value = messages.value.map(m => m._id === id ? message : m)
         break
       }
     }
